@@ -1,12 +1,10 @@
-import './App.css'
-
+import { Button } from "@/components/ui/button";
 function App() {
-
   return (
-    <>
-    <h1>Hello world</h1>
-    <h2>New Hello world</h2>
-    </>
-  )
+    <div className="container mx-auto p-8">
+        <h1 className="text-2xl font-bold mb-4">Vite + shadcn/ui</h1>
+        <Button>Get started</Button>
+    </div>
+  );
 }
-export default App
+export default App;
