@@ -22,11 +22,7 @@ type KanbanColumnProps = {
     onMoveCard: (cardId: string, fromColumnId: string, toColumnId: string) => void;
 };
 
-export function KanbanColumn({
-    column,
-    onAddCard,
-    onDeleteCard,
-}: KanbanColumnProps) {
+export function KanbanColumn({ column, onAddCard, onDeleteCard }: KanbanColumnProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [title, setTitle] = useState("");
     const [priority, setPriority] = useState<Priority>("low");
