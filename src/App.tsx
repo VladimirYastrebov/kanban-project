@@ -1,16 +1,95 @@
+import { useState } from "react";
+
 import { BOARD } from "@/components/kanban/boardData";
 import { KanbanColumn } from "@/components/kanban/KanbanColumn";
+import type { Assignee, Card, Column, NewCardInput, Tone } from "@/components/kanban/types";
+
+const TONES: Tone[] = ["slate", "emerald", "violet", "amber", "rose"];
+
+function formatToday() {
+  return new Date().toLocaleDateString("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  });
+}
+
+function toAssignees(names: string[]): Assignee[] {
+  return names.map((name, index) => ({
+    id: `u-${crypto.randomUUID()}`,
+    name,
+    tone: TONES[index % TONES.length],
+  }));
+}
 
 function App() {
+  const [columns, setColumns] = useState<Column[]>(BOARD);
+  const columnIds = columns.map((column) => column.id);
+
+  function addCard(columnId: string, input: NewCardInput) {
+    const nextCard: Card = {
+      id: `c-${crypto.randomUUID()}`,
+      title: input.title,
+      description: input.description,
+      priority: input.priority,
+      tags: input.tags,
+      date: formatToday(),
+      assignees: toAssignees(input.assigneeNames),
+    };
+
+    setColumns((current) =>
+      current.map((column) =>
+        column.id === columnId
+          ? { ...column, cards: [...column.cards, nextCard] }
+          : column,
+      ),
+    );
+  }
+
+  function deleteCard(columnId: string, cardId: string) {
+    setColumns((current) =>
+      current.map((column) =>
+        column.id === columnId
+          ? { ...column, cards: column.cards.filter((card) => card.id !== cardId) }
+          : column,
+      ),
+    );
+  }
+
+  function moveCard(cardId: string, fromColumnId: string, toColumnId: string) {
+    if (fromColumnId === toColumnId) return;
+
+    setColumns((current) => {
+      const sourceColumn = current.find((column) => column.id === fromColumnId);
+      const cardToMove = sourceColumn?.cards.find((card) => card.id === cardId);
+      if (!cardToMove) return current;
+
+      return current.map((column) => {
+        if (column.id === fromColumnId) {
+          return {
+            ...column,
+            cards: column.cards.filter((card) => card.id !== cardId),
+          };
+        }
+
+        if (column.id === toColumnId) {
+          return {
+            ...column,
+            cards: [...column.cards, cardToMove],
+          };
+        }
+
+        return column;
+      });
+    });
+  }
+
   return (
     <main className="min-h-dvh bg-background">
       <div className="container mx-auto space-y-6 px-4 py-10">
         <header className="flex items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Kanban Board</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Simple UI first — behavior later.
-            </p>
           </div>
         </header>
 
@@ -18,8 +97,15 @@ function App() {
           className="grid gap-6 md:grid-cols-3"
           aria-label="Kanban board"
         >
-          {BOARD.map((column) => (
-            <KanbanColumn key={column.id} column={column} />
+          {columns.map((column) => (
+            <KanbanColumn
+              key={column.id}
+              column={column}
+              columnIds={columnIds}
+              onAddCard={addCard}
+              onDeleteCard={deleteCard}
+              onMoveCard={moveCard}
+            />
           ))}
         </section>
       </div>

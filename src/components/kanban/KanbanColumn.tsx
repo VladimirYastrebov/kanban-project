@@ -12,9 +12,21 @@ import {
 } from "@/components/ui/select";
 
 import { KanbanCard } from "./KanbanCard";
-import type { Column, Priority, Tag } from "./types";
+import type { Column, NewCardInput, Priority, Tag } from "./types";
 
-export function KanbanColumn({ column }: { column: Column }) {
+type KanbanColumnProps = {
+    column: Column;
+    columnIds: string[];
+    onAddCard: (columnId: string, input: NewCardInput) => void;
+    onDeleteCard: (columnId: string, cardId: string) => void;
+    onMoveCard: (cardId: string, fromColumnId: string, toColumnId: string) => void;
+};
+
+export function KanbanColumn({
+    column,
+    onAddCard,
+    onDeleteCard,
+}: KanbanColumnProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [title, setTitle] = useState("");
     const [priority, setPriority] = useState<Priority>("low");
@@ -24,6 +36,19 @@ export function KanbanColumn({ column }: { column: Column }) {
 
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        const parsedAssignees = assignees
+            .split(",")
+            .map((name) => name.trim())
+            .filter(Boolean);
+
+        onAddCard(column.id, {
+            title: title.trim(),
+            description: description.trim() || undefined,
+            priority,
+            tags,
+            assigneeNames: parsedAssignees,
+        });
+
         setIsOpen(false);
         setTitle("");
         setPriority("low");
@@ -46,9 +71,23 @@ export function KanbanColumn({ column }: { column: Column }) {
                 </CardHeader>
 
                 <CardContent className="space-y-3">
-                    {column.cards.map((card) => (
-                        <KanbanCard key={card.id} card={card} />
-                    ))}
+                    {column.cards.map((card) => {
+                        return (
+                            <div key={card.id} className="space-y-2">
+                                <KanbanCard card={card} />
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => onDeleteCard(column.id, card.id)}
+                                    >
+                                        Delete
+                                    </Button>
+                                </div>
+                            </div>
+                        );
+                    })}
 
                     {column.cards.length === 0 ? (
                         <div className="rounded-lg border border-dashed bg-background/60 p-6 text-center text-sm text-muted-foreground">
@@ -101,6 +140,7 @@ export function KanbanColumn({ column }: { column: Column }) {
                                         return (
                                             <button
                                                 key={tag}
+                                                type="button"
                                                 className={`rounded-full border px-3 py-1 text-xs ${checked ? "bg-primary text-primary-foreground" : "bg-background text-foreground"}`}
                                                 onClick={() => {
                                                     setTags((current) =>

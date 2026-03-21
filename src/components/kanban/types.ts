@@ -14,3 +14,11 @@ export type Card = {
 };
 
 export type Column = { id: string; title: string; cards: Card[] };
+
+export type NewCardInput = {
+  title: string;
+  description?: string;
+  priority: Priority;
+  tags: Tag[];
+  assigneeNames: string[];
+};
