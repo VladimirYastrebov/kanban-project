@@ -1,5 +1,14 @@
 # React + TypeScript + Vite
 
+        // Example payload:
+        // {
+        //   title,
+        //   priority,
+        //   description,
+        //   tags,
+        //   assignees: assignees.split(",").map((name) => name.trim())
+        // }
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
