@@ -23,8 +23,16 @@ type KanbanColumnProps = {
     onMoveCard: (cardId: string, fromColumnId: string, toColumnId: string) => void;
 };
 
-export function KanbanColumn({ column, onAddCard, onDeleteCard, onEditCard }: KanbanColumnProps) {
+export function KanbanColumn({
+    column,
+    columnIds,
+    onAddCard,
+    onDeleteCard,
+    onEditCard,
+    onMoveCard,
+}: KanbanColumnProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [selectedColumnId, setSelectedColumnId] = useState(column.id);
     const [title, setTitle] = useState("");
     const [priority, setPriority] = useState<Priority>("low");
     const [description, setDescription] = useState("");
@@ -35,6 +43,7 @@ export function KanbanColumn({ column, onAddCard, onDeleteCard, onEditCard }: Ka
     //! TODO: Вынести в контекст States
 
     function resetForm() {
+        setSelectedColumnId(column.id);
         setTitle("");
         setPriority("low");
         setDescription("");
@@ -50,6 +59,7 @@ export function KanbanColumn({ column, onAddCard, onDeleteCard, onEditCard }: Ka
 
     function openEditModal(card: CardType) {
         setEditingCard(card);
+        setSelectedColumnId(column.id);
         setTitle(card.title);
         setPriority(card.priority);
         setDescription(card.description ?? "");
@@ -75,8 +85,11 @@ export function KanbanColumn({ column, onAddCard, onDeleteCard, onEditCard }: Ka
 
         if (editingCard) {
             onEditCard(column.id, editingCard.id, input);
+            if (selectedColumnId !== column.id) {
+                onMoveCard(editingCard.id, column.id, selectedColumnId);
+            }
         } else {
-            onAddCard(column.id, input);
+            onAddCard(selectedColumnId, input);
         }
 
         setIsOpen(false);
@@ -124,11 +137,12 @@ export function KanbanColumn({ column, onAddCard, onDeleteCard, onEditCard }: Ka
             </Card>
 
             {isOpen ? (
-                // TODO: добавить select для выбора места куда добавляем task
                 <div className="kanban-modal-overlay">
                     <div className="kanban-modal">
                         <h2 className="text-lg font-semibold">
-                            {editingCard ? `Edit task in ${column.title}` : `Add task to ${column.title}`}
+                            {editingCard
+                                ? `Edit task in ${column.title}`
+                                : `Add task to ${column.title}`}
                         </h2>
                         <form className="mt-4 flex flex-col gap-3" onSubmit={handleSubmit}>
                             <Input
@@ -137,6 +151,27 @@ export function KanbanColumn({ column, onAddCard, onDeleteCard, onEditCard }: Ka
                                 placeholder="Task title"
                                 required
                             />
+
+                            <Select
+                                value={selectedColumnId}
+                                onValueChange={(value) => setSelectedColumnId(value)}
+                            >
+                                <SelectTrigger className="kanban-modal-input">
+                                    <SelectValue placeholder="Select column" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {columnIds.map((columnId) => (
+                                        <SelectItem key={columnId} value={columnId}>
+                                            {columnId
+                                                .split("_")
+                                                .map(
+                                                    (word) => word[0].toUpperCase() + word.slice(1),
+                                                )
+                                                .join(" ")}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
 
                             <Select
                                 value={priority}
@@ -204,9 +239,15 @@ export function KanbanColumn({ column, onAddCard, onDeleteCard, onEditCard }: Ka
                                 >
                                     Cancel
                                 </Button>
-                                <Button type="submit" size="sm">
-                                    Save
-                                </Button>
+                                {!editingCard ? (
+                                    <Button type="submit" size="sm">
+                                        Add
+                                    </Button>
+                                ) : (
+                                    <Button type="submit" size="sm">
+                                        Edit
+                                    </Button>
+                                )}
                             </div>
                         </form>
                     </div>

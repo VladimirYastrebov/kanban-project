@@ -12,8 +12,8 @@ export type Card = {
     date: string;
     assignees: Assignee[];
 };
-
-export type Column = { id: string; title: string; cards: Card[] };
+type ColumnTitle = "Todo" | "In Progress" | "Completed"
+export type Column = { id: string; title: ColumnTitle; cards: Card[] };
 
 export type NewCardInput = {
     title: string;
