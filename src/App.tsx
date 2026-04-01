@@ -54,6 +54,30 @@ function App() {
         );
     }
 
+    function editCard(columnId: string, cardId: string, input: NewCardInput) {
+        setColumns((current) =>
+            current.map((column) =>
+                column.id !== columnId
+                    ? column
+                    : {
+                          ...column,
+                          cards: column.cards.map((card) =>
+                              card.id !== cardId
+                                  ? card
+                                  : {
+                                        ...card,
+                                        title: input.title,
+                                        description: input.description,
+                                        priority: input.priority,
+                                        tags: input.tags,
+                                        assignees: toAssignees(input.assigneeNames),
+                                    },
+                          ),
+                      },
+            ),
+        );
+    }
+
     function moveCard(cardId: string, fromColumnId: string, toColumnId: string) {
         if (fromColumnId === toColumnId) return;
 
@@ -99,6 +123,7 @@ function App() {
                             columnIds={columnIds}
                             onAddCard={addCard}
                             onDeleteCard={deleteCard}
+                            onEditCard={editCard}
                             onMoveCard={moveCard}
                         />
                     ))}

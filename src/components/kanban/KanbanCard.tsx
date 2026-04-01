@@ -50,17 +50,18 @@ function avatarClass(tone: Card["assignees"][number]["tone"]) {
     }
 }
 
-export function KanbanCard({ card }: { card: Card }) {
+export function KanbanCard({ card, onClick }: { card: Card; onClick?: () => void }) {
     return (
-        <UiCard size="sm">
-            <CardHeader className="gap-2">
-                <div className="flex items-center justify-between gap-3">
-                    <Badge
-                        variant="outline"
-                        className={`capitalize ${priorityClass(card.priority)}`}
-                    >
-                        {card.priority}
-                    </Badge>
+        <button type="button" onClick={onClick} className="w-full text-left">
+            <UiCard size="sm">
+                <CardHeader className="gap-2">
+                    <div className="flex items-center justify-between gap-3">
+                        <Badge
+                            variant="outline"
+                            className={`capitalize ${priorityClass(card.priority)}`}
+                        >
+                            {card.priority}
+                        </Badge>
 
                     <div className="flex flex-wrap items-center justify-end gap-2">
                         {card.tags.map((tag) => (
@@ -96,5 +97,6 @@ export function KanbanCard({ card }: { card: Card }) {
                 </div>
             </CardFooter>
         </UiCard>
+    </button>
     );
 }

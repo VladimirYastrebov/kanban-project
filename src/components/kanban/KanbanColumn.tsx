@@ -12,23 +12,51 @@ import {
 } from "@/components/ui/select";
 
 import { KanbanCard } from "./KanbanCard";
-import type { Column, NewCardInput, Priority, Tag } from "./types";
+import type { Card as CardType, Column, NewCardInput, Priority, Tag } from "./types";
 
 type KanbanColumnProps = {
     column: Column;
     columnIds: string[];
     onAddCard: (columnId: string, input: NewCardInput) => void;
     onDeleteCard: (columnId: string, cardId: string) => void;
+    onEditCard: (columnId: string, cardId: string, input: NewCardInput) => void;
     onMoveCard: (cardId: string, fromColumnId: string, toColumnId: string) => void;
 };
 
-export function KanbanColumn({ column, onAddCard, onDeleteCard }: KanbanColumnProps) {
+export function KanbanColumn({ column, onAddCard, onDeleteCard, onEditCard }: KanbanColumnProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [title, setTitle] = useState("");
     const [priority, setPriority] = useState<Priority>("low");
     const [description, setDescription] = useState("");
     const [tags, setTags] = useState<Tag[]>([]);
     const [assignees, setAssignees] = useState("");
+    const [editingCard, setEditingCard] = useState<CardType | null>(null);
+
+    //! TODO: Вынести в контекст States
+
+    function resetForm() {
+        setTitle("");
+        setPriority("low");
+        setDescription("");
+        setTags([]);
+        setAssignees("");
+        setEditingCard(null);
+    }
+
+    function openAddModal() {
+        resetForm();
+        setIsOpen(true);
+    }
+
+    function openEditModal(card: CardType) {
+        setEditingCard(card);
+        setTitle(card.title);
+        setPriority(card.priority);
+        setDescription(card.description ?? "");
+        setTags(card.tags);
+        setAssignees(card.assignees.map((assignee) => assignee.name).join(", "));
+        setIsOpen(true);
+    }
 
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -37,20 +65,22 @@ export function KanbanColumn({ column, onAddCard, onDeleteCard }: KanbanColumnPr
             .map((name) => name.trim())
             .filter(Boolean);
 
-        onAddCard(column.id, {
+        const input: NewCardInput = {
             title: title.trim(),
             description: description.trim() || undefined,
             priority,
             tags,
             assigneeNames: parsedAssignees,
-        });
+        };
+
+        if (editingCard) {
+            onEditCard(column.id, editingCard.id, input);
+        } else {
+            onAddCard(column.id, input);
+        }
 
         setIsOpen(false);
-        setTitle("");
-        setPriority("low");
-        setDescription("");
-        setTags([]);
-        setAssignees("");
+        resetForm();
     }
 
     return (
@@ -61,7 +91,7 @@ export function KanbanColumn({ column, onAddCard, onDeleteCard }: KanbanColumnPr
                         <CardTitle className="text-sm">{column.title}</CardTitle>
                         <span className="text-xs text-muted-foreground">{column.cards.length}</span>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => setIsOpen(true)}>
+                    <Button variant="ghost" size="sm" onClick={openAddModal}>
                         Add
                     </Button>
                 </CardHeader>
@@ -70,7 +100,7 @@ export function KanbanColumn({ column, onAddCard, onDeleteCard }: KanbanColumnPr
                     {column.cards.map((card) => {
                         return (
                             <div key={card.id} className="space-y-2">
-                                <KanbanCard card={card} />
+                                <KanbanCard card={card} onClick={() => openEditModal(card)} />
                                 <div className="flex flex-wrap items-center gap-2">
                                     <Button
                                         type="button"
@@ -94,9 +124,12 @@ export function KanbanColumn({ column, onAddCard, onDeleteCard }: KanbanColumnPr
             </Card>
 
             {isOpen ? (
+                // TODO: добавить select для выбора места куда добавляем task
                 <div className="kanban-modal-overlay">
                     <div className="kanban-modal">
-                        <h2 className="text-lg font-semibold">Add task to {column.title}</h2>
+                        <h2 className="text-lg font-semibold">
+                            {editingCard ? `Edit task in ${column.title}` : `Add task to ${column.title}`}
+                        </h2>
                         <form className="mt-4 flex flex-col gap-3" onSubmit={handleSubmit}>
                             <Input
                                 value={title}
@@ -166,11 +199,7 @@ export function KanbanColumn({ column, onAddCard, onDeleteCard }: KanbanColumnPr
                                     size="sm"
                                     onClick={() => {
                                         setIsOpen(false);
-                                        setTitle("");
-                                        setPriority("low");
-                                        setDescription("");
-                                        setTags([]);
-                                        setAssignees("");
+                                        resetForm();
                                     }}
                                 >
                                     Cancel
