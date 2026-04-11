@@ -1,4 +1,4 @@
-import type { Card } from "./types";
+import type { Card } from "../../types/kanban";
 import { Badge } from "@/components/ui/badge";
 import {
     Card as UiCard,

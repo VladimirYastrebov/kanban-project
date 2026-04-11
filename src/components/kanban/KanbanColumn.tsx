@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 
 import { KanbanCard } from "./KanbanCard";
-import type { Card as CardType, Column, NewCardInput, Priority, Tag } from "./types";
+import type { Card as CardType, Column, NewCardInput, Priority, Tag } from "../../types/kanban";
 
 type KanbanColumnProps = {
     column: Column;
