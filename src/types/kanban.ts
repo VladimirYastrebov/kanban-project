@@ -18,7 +18,7 @@ export interface Card {
     date: string;
     assignees: Assignee[];
     column?: string;
-    order?: number;  
+    order?: number;
 }
 
 export interface Column {
@@ -29,11 +29,11 @@ export interface Column {
 }
 
 export interface NewCardInput {
-  title: string;
-  description?: string;
-  priority: Priority;
-  tags: string[];
-  assigneeNames: string[];
+    title: string;
+    description?: string;
+    priority: Priority;
+    tags: string[];
+    assigneeNames: string[];
 }
 
 export interface BackendCard {

@@ -187,9 +187,10 @@ export const transformColumnsToFrontend = (
         id: mapColumnIdToFrontend(backendColumn.id),
         title: mapTitleToFrontend(backendColumn.title) as ColumnTitle,
         order: backendColumn.order,
-        cards: includeCards && backendColumn.cards
-            ? backendColumn.cards.map(transformCardToFrontend)
-            : [],
+        cards:
+            includeCards && backendColumn.cards
+                ? backendColumn.cards.map(transformCardToFrontend)
+                : [],
     };
 };
 

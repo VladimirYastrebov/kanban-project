@@ -50,7 +50,7 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
             setLoading(true);
             const data = await loadBoardData();
-            console.log(data)
+            console.log(data);
             setColumns(data);
             setError(null);
         } catch (err) {
