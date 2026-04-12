@@ -76,3 +76,5 @@ export interface UpdateCardRequest {
     column?: string;
     order?: number;
 }
+
+export type PartialCard = Partial<Card>;

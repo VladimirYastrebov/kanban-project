@@ -1,7 +1,10 @@
+// contexts/BoardContext.tsx
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { loadBoardData } from "@/services/dataLoader";
 import type { Column, Card, NewCardInput } from "@/types/kanban";
+import { getTodayFormatted } from "@/utils/dateHelpers";
+import { namesToAssignees } from "@/utils/transformers";
 
 interface BoardContextType {
     columns: Column[];
@@ -24,64 +27,55 @@ export const useBoard = () => {
     return context;
 };
 
-const TONES: string[] = ["slate", "emerald", "violet", "amber", "rose"];
-
-function formatToday() {
-    return new Date().toLocaleDateString("en-US", {
-        month: "short",
-        day: "2-digit",
-        year: "numeric",
-    });
-}
-
-function toAssignees(names: string[]): any[] {
-    return names.map((name, index) => ({
-        id: `u-${crypto.randomUUID()}`,
-        name,
-        tone: TONES[index % TONES.length],
-    }));
-}
+const getNextCardOrder = (column: Column | undefined): number => {
+    return column?.cards?.length ?? 0;
+};
 
 export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [columns, setColumns] = useState<Column[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const loadData = async () => {
+
+    const loadData = async (): Promise<void> => {
         try {
             setLoading(true);
             const data = await loadBoardData();
-            console.log(data);
+            console.log("Loaded board data:", data);
             setColumns(data);
             setError(null);
         } catch (err) {
-            setError("Failed to load board data");
-            console.error(err);
+            const errorMessage = err instanceof Error ? err.message : "Failed to load board data";
+            setError(errorMessage);
+            console.error("Error loading board data:", err);
         } finally {
             setLoading(false);
         }
     };
 
-    const refreshBoard = async () => {
+    const refreshBoard = async (): Promise<void> => {
         await loadData();
     };
 
-    const addCard = async (columnId: string, input: NewCardInput) => {
+    const addCard = async (columnId: string, input: NewCardInput): Promise<void> => {
+        const targetColumn = columns.find((col) => col.id === columnId);
+        const newOrder = getNextCardOrder(targetColumn);
+
         const newCard: Card = {
             id: `c-${crypto.randomUUID()}`,
             title: input.title,
-            description: input.description || "",
+            description: input.description ?? "",
             priority: input.priority,
             tags: input.tags,
-            date: formatToday(),
-            assignees: toAssignees(input.assigneeNames),
+            date: getTodayFormatted(),
+            assignees: namesToAssignees(input.assigneeNames),
             column: columnId,
-            order: columns.find((col) => col.id === columnId)?.cards?.length || 0,
+            order: newOrder,
         };
 
-        setColumns((current) =>
-            current.map((column) =>
+        setColumns((current: Column[]) =>
+            current.map((column: Column) =>
                 column.id === columnId
-                    ? { ...column, cards: [...(column.cards || []), newCard] }
+                    ? { ...column, cards: [...(column.cards ?? []), newCard] }
                     : column,
             ),
         );
@@ -90,33 +84,33 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         // await createCard(columnId, newCard);
     };
 
-    const deleteCard = (columnId: string, cardId: string) => {
-        setColumns((current) =>
-            current.map((column) =>
+    const deleteCard = (columnId: string, cardId: string): void => {
+        setColumns((current: Column[]) =>
+            current.map((column: Column) =>
                 column.id === columnId
                     ? {
                           ...column,
-                          cards: (column.cards || []).filter((card) => card.id !== cardId),
+                          cards: (column.cards ?? []).filter((card: Card) => card.id !== cardId),
                       }
                     : column,
             ),
         );
     };
 
-    const editCard = (columnId: string, cardId: string, input: NewCardInput) => {
-        setColumns((current) =>
-            current.map((column) =>
+    const editCard = (columnId: string, cardId: string, input: NewCardInput): void => {
+        setColumns((current: Column[]) =>
+            current.map((column: Column) =>
                 column.id !== columnId
                     ? column
                     : {
                           ...column,
-                          cards: (column.cards || []).map((card) =>
+                          cards: (column.cards ?? []).map((card: Card) =>
                               card.id !== cardId
                                   ? card
                                   : {
                                         ...card,
                                         title: input.title,
-                                        description: input.description || "",
+                                        description: input.description ?? "",
                                         priority: input.priority,
                                         tags: input.tags,
                                         assignees: toAssignees(input.assigneeNames),
@@ -132,32 +126,36 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         fromColumnId: string,
         toColumnId: string,
         newOrder?: number,
-    ) => {
+    ): void => {
         if (fromColumnId === toColumnId) return;
 
-        setColumns((current) => {
-            const sourceColumn = current.find((column) => column.id === fromColumnId);
-            const cardToMove = sourceColumn?.cards?.find((card) => card.id === cardId);
+        setColumns((current: Column[]) => {
+            const sourceColumn = current.find((column: Column) => column.id === fromColumnId);
+            const cardToMove = sourceColumn?.cards?.find((card: Card) => card.id === cardId);
+
             if (!cardToMove) return current;
 
-            const updatedCard = {
+            const targetColumn = current.find((c: Column) => c.id === toColumnId);
+            const updatedOrder = newOrder ?? targetColumn?.cards?.length ?? 0;
+
+            const updatedCard: Card = {
                 ...cardToMove,
                 column: toColumnId,
-                order: newOrder ?? current.find((c) => c.id === toColumnId)?.cards?.length ?? 0,
+                order: updatedOrder,
             };
 
-            return current.map((column) => {
+            return current.map((column: Column) => {
                 if (column.id === fromColumnId) {
                     return {
                         ...column,
-                        cards: (column.cards || []).filter((card) => card.id !== cardId),
+                        cards: (column.cards ?? []).filter((card: Card) => card.id !== cardId),
                     };
                 }
 
                 if (column.id === toColumnId) {
                     return {
                         ...column,
-                        cards: [...(column.cards || []), updatedCard],
+                        cards: [...(column.cards ?? []), updatedCard],
                     };
                 }
 
