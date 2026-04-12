@@ -1,7 +1,5 @@
-// App.tsx
-/* eslint-disable react-refresh/only-export-components */
-import { useBoard } from "./contexts/BoardContext";
-import { KanbanColumn } from "@/components/kanban/KanbanColumn";
+import { useBoard } from "./contexts/useBoard.ts";
+import { KanbanColumn } from "@/components/kanban/KanbanColumn.tsx";
 
 function App() {
     const { columns, loading, error, addCard, deleteCard, editCard, moveCard } = useBoard();

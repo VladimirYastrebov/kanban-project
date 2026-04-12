@@ -1,12 +1,11 @@
-// contexts/BoardContext.tsx
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { loadBoardData } from "@/services/dataLoader";
 import type { Column, Card, NewCardInput } from "@/types/kanban";
 import { getTodayFormatted } from "@/utils/dateHelpers";
 import { namesToAssignees } from "@/utils/transformers";
 
-interface BoardContextType {
+export interface BoardContextType {
     columns: Column[];
     loading: boolean;
     error: string | null;
@@ -18,14 +17,6 @@ interface BoardContextType {
 }
 
 const BoardContext = createContext<BoardContextType | undefined>(undefined);
-
-export const useBoard = () => {
-    const context = useContext(BoardContext);
-    if (!context) {
-        throw new Error("useBoard must be used within BoardProvider");
-    }
-    return context;
-};
 
 const getNextCardOrder = (column: Column | undefined): number => {
     return column?.cards?.length ?? 0;
@@ -113,7 +104,7 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                                         description: input.description ?? "",
                                         priority: input.priority,
                                         tags: input.tags,
-                                        assignees: toAssignees(input.assigneeNames),
+                                        assignees: namesToAssignees(input.assigneeNames),
                                     },
                           ),
                       },
@@ -132,7 +123,6 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setColumns((current: Column[]) => {
             const sourceColumn = current.find((column: Column) => column.id === fromColumnId);
             const cardToMove = sourceColumn?.cards?.find((card: Card) => card.id === cardId);
-
             if (!cardToMove) return current;
 
             const targetColumn = current.find((c: Column) => c.id === toColumnId);
@@ -151,14 +141,12 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                         cards: (column.cards ?? []).filter((card: Card) => card.id !== cardId),
                     };
                 }
-
                 if (column.id === toColumnId) {
                     return {
                         ...column,
                         cards: [...(column.cards ?? []), updatedCard],
                     };
                 }
-
                 return column;
             });
         });
@@ -185,3 +173,5 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         </BoardContext.Provider>
     );
 };
+
+export { BoardContext };

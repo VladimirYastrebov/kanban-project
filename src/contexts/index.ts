@@ -1,1 +1,2 @@
-export { BoardProvider, useBoard } from "./BoardContext";
+export { BoardProvider } from "./BoardContext";
+export { useBoard } from "./useBoard"
