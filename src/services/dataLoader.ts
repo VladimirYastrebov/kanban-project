@@ -34,7 +34,6 @@ export const loadBoardData = async (): Promise<Column[]> => {
         } finally {
             loadingPromise = null;
         }
-        console.log("Кэш", cachedData)
         return cachedData!;
     })();
 
