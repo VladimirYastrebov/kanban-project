@@ -12,8 +12,10 @@ const api = axios.create({
 
 export const getColumns = async (): Promise<Column[]> => {
     const response = await api.get("/columns/");
+
     console.log("Raw API response:", response.data);
-    //TODO: отсюда начать разбирать что мне приходит
+
+    //TODO: отсюда начать разбирать что не так
     const transformedData = transformator.transformColumnsToFrontend(response.data);
     console.log("Transformed data:", transformedData);
 

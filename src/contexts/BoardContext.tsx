@@ -60,9 +60,6 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             setLoading(false);
         }
     };
-    useEffect(() => {
-        loadData();
-    }, []);
 
     const refreshBoard = async () => {
         await loadData();
