@@ -21,7 +21,7 @@ export const getColumns = async (): Promise<Column[]> => {
 
 export const createCard = async (columnId: string, cardData: PartialCard): Promise<Card> => {
     const backendCardData = transformator.transformCardToBackend(cardData, columnId);
-    const response = await api.post(`/columns/${columnId}/cards/`, backendCardData);
+    const response = await api.post(`/columns/${backendCardData.column}/cards/`, backendCardData);
 
     return transformator.transformCardToFrontend(response.data);
 };
@@ -31,5 +31,7 @@ export const updateCard = async (cardId: string, updates: PartialCard): Promise<
     const response = await api.put(`/cards/${cardId}/`, backendUpdates);
     return transformator.transformCardToFrontend(response.data);
 };
+
+//! написать Delete
 
 export default api;

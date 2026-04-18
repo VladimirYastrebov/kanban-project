@@ -4,6 +4,7 @@ import { loadBoardData } from "@/services/dataLoader";
 import type { Column, Card, NewCardInput } from "@/types/kanban";
 import { getTodayFormatted } from "@/utils/dateHelpers";
 import { namesToAssignees } from "@/utils/transformers";
+import { createCard } from "@/services/api";
 
 export interface BoardContextType {
     columns: Column[];
@@ -71,8 +72,35 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             ),
         );
 
-        // TODO: Call API to save to backend
-        // await createCard(columnId, newCard);
+        try {
+            const savedCard = await createCard(columnId, newCard);
+            console.log("Card saved to backend:", savedCard);
+
+            setColumns((current: Column[]) =>
+                current.map((column: Column) =>
+                    column.id === columnId
+                        ? {
+                              ...column,
+                              cards: (column.cards ?? []).map((card) =>
+                                  card.id === newCard.id ? savedCard : card,
+                              ),
+                          }
+                        : column,
+                ),
+            );
+        } catch (error) {
+            console.error("Failed to save card:", error);
+            setColumns((current: Column[]) =>
+                current.map((column: Column) =>
+                    column.id === columnId
+                        ? {
+                              ...column,
+                              cards: (column.cards ?? []).filter((card) => card.id !== newCard.id),
+                          }
+                        : column,
+                ),
+            );
+        }
     };
 
     const deleteCard = (columnId: string, cardId: string): void => {

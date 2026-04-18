@@ -1,6 +1,6 @@
 import { useContext } from "react";
-import { BoardContext } from "./BoardContext.tsx";
-import type { BoardContextType } from "./BoardContext.tsx";
+import { BoardContext } from "./BoardContext";
+import type { BoardContextType } from "./BoardContext";
 
 export const useBoard = (): BoardContextType => {
     const context = useContext(BoardContext);

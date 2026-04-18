@@ -51,9 +51,6 @@ function avatarClass(tone: Card["assignees"][number]["tone"]) {
 }
 
 export function KanbanCard({ card, onClick }: { card: Card; onClick?: () => void }) {
-    console.log("Card received:", card);
-    console.log("Tags type:", typeof card.tags, card.tags);
-    console.log("Assignees type:", typeof card.assignees, card.assignees);
     return (
         <button type="button" onClick={onClick} className="w-full text-left">
             <UiCard size="sm">

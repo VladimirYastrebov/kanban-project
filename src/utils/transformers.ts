@@ -199,8 +199,7 @@ export const mapTitleToFrontend = (backendTitle: string): ColumnTitle => {
 };
 
 export const mapColumnIdToBackend = (frontendId: string): string => {
-    const mapped = COLUMN_ID_TO_BACKEND_MAPPING[frontendId];
-    return mapped ?? frontendId;
+    return COLUMN_ID_TO_BACKEND_MAPPING[frontendId] || frontendId;
 };
 
 export const mapColumnIdToFrontend = (backendId: string): string => {
@@ -213,6 +212,10 @@ export const transformCardToBackend = (
     columnId: string,
 ): CreateCardRequest => {
     const backendColumnId = mapColumnIdToBackend(columnId);
+
+    console.log(
+        `📤 Transforming card: frontend column "${columnId}" -> backend column "${backendColumnId}"`,
+    );
 
     return {
         id: frontendCard.id ?? crypto.randomUUID(),
