@@ -1,10 +1,10 @@
 import React, { createContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { loadBoardData } from "@/services/dataLoader";
+import { loadBoardData, refreshBoardData } from "@/services/dataLoader";
 import type { Column, Card, NewCardInput } from "@/types/kanban";
 import { getTodayFormatted } from "@/utils/dateHelpers";
 import { namesToAssignees } from "@/utils/transformers";
-import { createCard } from "@/services/api";
+import { createCard, removeCard, updateCard } from "@/services/api";
 
 export interface BoardContextType {
     columns: Column[];
@@ -12,15 +12,39 @@ export interface BoardContextType {
     error: string | null;
     refreshBoard: () => Promise<void>;
     addCard: (columnId: string, input: NewCardInput) => Promise<void>;
-    deleteCard: (columnId: string, cardId: string) => void;
-    editCard: (columnId: string, cardId: string, input: NewCardInput) => void;
-    moveCard: (cardId: string, fromColumnId: string, toColumnId: string, newOrder?: number) => void;
+    deleteCard: (columnId: string, cardId: string) => Promise<void>;
+    saveCardEdit: (
+        fromColumnId: string,
+        cardId: string,
+        targetColumnId: string,
+        input: NewCardInput,
+    ) => Promise<void>;
+    moveCard: (cardId: string, fromColumnId: string, toColumnId: string, newOrder?: number) => Promise<void>;
 }
 
 const BoardContext = createContext<BoardContextType | undefined>(undefined);
 
 const getNextCardOrder = (column: Column | undefined): number => {
     return column?.cards?.length ?? 0;
+};
+
+const sortCardsByOrder = (cards: Card[]): Card[] =>
+    [...cards].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+const replaceCardInColumns = (columns: Column[], cardId: string, saved: Card): Column[] => {
+    const without = columns.map((col) => ({
+        ...col,
+        cards: (col.cards ?? []).filter((c) => c.id !== cardId),
+    }));
+    const destId = saved.column;
+    if (!destId) {
+        return without;
+    }
+    return without.map((col) =>
+        col.id === destId
+            ? { ...col, cards: sortCardsByOrder([...(col.cards ?? []), saved]) }
+            : col,
+    );
 };
 
 export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -32,7 +56,6 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
             setLoading(true);
             const data = await loadBoardData();
-            console.log("Loaded board data:", data);
             setColumns(data);
             setError(null);
         } catch (err) {
@@ -45,7 +68,18 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
 
     const refreshBoard = async (): Promise<void> => {
-        await loadData();
+        try {
+            setLoading(true);
+            const data = await refreshBoardData();
+            setColumns(data);
+            setError(null);
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to refresh board data";
+            setError(errorMessage);
+            console.error("Error refreshing board data:", err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const addCard = async (columnId: string, input: NewCardInput): Promise<void> => {
@@ -74,7 +108,6 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
         try {
             const savedCard = await createCard(columnId, newCard);
-            console.log("Card saved to backend:", savedCard);
 
             setColumns((current: Column[]) =>
                 current.map((column: Column) =>
@@ -103,63 +136,151 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
 
-    const deleteCard = (columnId: string, cardId: string): void => {
-        setColumns((current: Column[]) =>
-            current.map((column: Column) =>
+    const deleteCard = async (columnId: string, cardId: string): Promise<void> => {
+        let snapshot: Column[] | null = null;
+        setColumns((current: Column[]) => {
+            snapshot = current.map((col: Column) => ({
+                ...col,
+                cards: (col.cards ?? []).map((c: Card) => ({ ...c })),
+            }));
+            return current.map((column: Column) =>
                 column.id === columnId
                     ? {
                           ...column,
                           cards: (column.cards ?? []).filter((card: Card) => card.id !== cardId),
                       }
                     : column,
-            ),
-        );
+            );
+        });
+
+        try {
+            await removeCard(cardId);
+        } catch (error) {
+            console.error("Failed to delete card:", error);
+            if (snapshot) {
+                setColumns(snapshot);
+            }
+        }
     };
 
-    const editCard = (columnId: string, cardId: string, input: NewCardInput): void => {
-        setColumns((current: Column[]) =>
-            current.map((column: Column) =>
-                column.id !== columnId
-                    ? column
-                    : {
-                          ...column,
-                          cards: (column.cards ?? []).map((card: Card) =>
-                              card.id !== cardId
-                                  ? card
-                                  : {
-                                        ...card,
-                                        title: input.title,
-                                        description: input.description ?? "",
-                                        priority: input.priority,
-                                        tags: input.tags,
-                                        assignees: namesToAssignees(input.assigneeNames),
-                                    },
-                          ),
-                      },
-            ),
-        );
+    const saveCardEdit = async (
+        fromColumnId: string,
+        cardId: string,
+        targetColumnId: string,
+        input: NewCardInput,
+    ): Promise<void> => {
+        let orderForApi = 0;
+        let snapshot: Column[] | null = null;
+
+        setColumns((current: Column[]) => {
+            snapshot = current.map((col: Column) => ({
+                ...col,
+                cards: (col.cards ?? []).map((c: Card) => ({ ...c })),
+            }));
+
+            const sourceColumn = current.find((c: Column) => c.id === fromColumnId);
+            const existing = sourceColumn?.cards?.find((c: Card) => c.id === cardId);
+            if (!existing) {
+                return current;
+            }
+
+            const targetColumn = current.find((c: Column) => c.id === targetColumnId);
+            orderForApi =
+                fromColumnId === targetColumnId
+                    ? (existing.order ?? 0)
+                    : (targetColumn?.cards ?? []).filter((c: Card) => c.id !== cardId).length;
+
+            const merged: Card = {
+                ...existing,
+                title: input.title,
+                description: input.description ?? "",
+                priority: input.priority,
+                tags: input.tags,
+                assignees: namesToAssignees(input.assigneeNames),
+                column: targetColumnId,
+                order: orderForApi,
+            };
+
+            if (fromColumnId === targetColumnId) {
+                return current.map((column: Column) =>
+                    column.id !== fromColumnId
+                        ? column
+                        : {
+                              ...column,
+                              cards: (column.cards ?? []).map((card: Card) =>
+                                  card.id === cardId ? merged : card,
+                              ),
+                          },
+                );
+            }
+
+            return current.map((column: Column) => {
+                if (column.id === fromColumnId) {
+                    return {
+                        ...column,
+                        cards: (column.cards ?? []).filter((card: Card) => card.id !== cardId),
+                    };
+                }
+                if (column.id === targetColumnId) {
+                    return {
+                        ...column,
+                        cards: [...(column.cards ?? []), merged],
+                    };
+                }
+                return column;
+            });
+        });
+
+        try {
+            const saved = await updateCard(cardId, {
+                title: input.title,
+                description: input.description ?? "",
+                priority: input.priority,
+                tags: input.tags,
+                assignees: namesToAssignees(input.assigneeNames),
+                column: targetColumnId,
+                order: orderForApi,
+            });
+            const merged: Card = { ...saved, column: saved.column ?? targetColumnId };
+            setColumns((current: Column[]) => replaceCardInColumns(current, cardId, merged));
+        } catch (error) {
+            console.error("Failed to save card:", error);
+            if (snapshot) {
+                setColumns(snapshot);
+            }
+        }
     };
 
-    const moveCard = (
+    const moveCard = async (
         cardId: string,
         fromColumnId: string,
         toColumnId: string,
         newOrder?: number,
-    ): void => {
+    ): Promise<void> => {
         if (fromColumnId === toColumnId) return;
 
+        let orderForApi = 0;
+        let snapshot: Column[] | null = null;
+
         setColumns((current: Column[]) => {
+            snapshot = current.map((col: Column) => ({
+                ...col,
+                cards: (col.cards ?? []).map((c: Card) => ({ ...c })),
+            }));
+
             const sourceColumn = current.find((column: Column) => column.id === fromColumnId);
             const cardToMove = sourceColumn?.cards?.find((card: Card) => card.id === cardId);
-            if (!cardToMove) return current;
+            if (!cardToMove) {
+                return current;
+            }
 
             const targetColumn = current.find((c: Column) => c.id === toColumnId);
-            const updatedOrder = newOrder ?? targetColumn?.cards?.length ?? 0;
+            orderForApi = newOrder ?? targetColumn?.cards?.length ?? 0;
 
             const updatedCard: Card = {
                 ...cardToMove,
                 column: toColumnId,
-                order: updatedOrder,
+                order: orderForApi,
             };
 
             return current.map((column: Column) => {
@@ -178,6 +299,20 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 return column;
             });
         });
+
+        try {
+            const saved = await updateCard(cardId, {
+                column: toColumnId,
+                order: orderForApi,
+            });
+            const merged: Card = { ...saved, column: saved.column ?? toColumnId };
+            setColumns((current: Column[]) => replaceCardInColumns(current, cardId, merged));
+        } catch (error) {
+            console.error("Failed to move card:", error);
+            if (snapshot) {
+                setColumns(snapshot);
+            }
+        }
     };
 
     useEffect(() => {
@@ -193,7 +328,7 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 refreshBoard,
                 addCard,
                 deleteCard,
-                editCard,
+                saveCardEdit,
                 moveCard,
             }}
         >

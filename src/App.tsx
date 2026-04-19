@@ -2,7 +2,7 @@ import { useBoard } from "./contexts/useBoard.ts";
 import { KanbanColumn } from "@/components/kanban/KanbanColumn.tsx";
 
 function App() {
-    const { columns, loading, error, addCard, deleteCard, editCard, moveCard } = useBoard();
+    const { columns, loading, error, addCard, deleteCard, saveCardEdit } = useBoard();
     const columnIds = columns.map((column) => column.id);
 
     if (loading) {
@@ -48,8 +48,7 @@ function App() {
                             columnIds={columnIds}
                             onAddCard={addCard}
                             onDeleteCard={deleteCard}
-                            onEditCard={editCard}
-                            onMoveCard={moveCard}
+                            onSaveCardEdit={saveCardEdit}
                         />
                     ))}
                 </section>

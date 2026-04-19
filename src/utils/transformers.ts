@@ -363,6 +363,8 @@ export const transformColumnsToBackend = (
     return frontendColumns.map((column: FrontendColumn) => transformColumnToBackend(column));
 };
 
+//? Спросить у нейронки ещё раз про это:
+
 export const isBackendCard = (value: unknown): value is BackendCard => {
     return (
         typeof value === "object" &&

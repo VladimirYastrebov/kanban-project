@@ -14,13 +14,22 @@ import {
 import { KanbanCard } from "./KanbanCard";
 import type { Card as CardType, Column, NewCardInput, Priority, Tag } from "../../types/kanban";
 
+const KNOWN_TAGS = ["Web", "Mobile", "Design"] as const satisfies readonly Tag[];
+
+const normalizeTags = (tags: string[]): Tag[] =>
+    tags.filter((t): t is Tag => (KNOWN_TAGS as readonly string[]).includes(t));
+
 type KanbanColumnProps = {
     column: Column;
     columnIds: string[];
-    onAddCard: (columnId: string, input: NewCardInput) => void;
-    onDeleteCard: (columnId: string, cardId: string) => void;
-    onEditCard: (columnId: string, cardId: string, input: NewCardInput) => void;
-    onMoveCard: (cardId: string, fromColumnId: string, toColumnId: string) => void;
+    onAddCard: (columnId: string, input: NewCardInput) => void | Promise<void>;
+    onDeleteCard: (columnId: string, cardId: string) => void | Promise<void>;
+    onSaveCardEdit: (
+        fromColumnId: string,
+        cardId: string,
+        targetColumnId: string,
+        input: NewCardInput,
+    ) => void | Promise<void>;
 };
 
 export function KanbanColumn({
@@ -28,8 +37,7 @@ export function KanbanColumn({
     columnIds,
     onAddCard,
     onDeleteCard,
-    onEditCard,
-    onMoveCard,
+    onSaveCardEdit,
 }: KanbanColumnProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedColumnId, setSelectedColumnId] = useState(column.id);
@@ -63,12 +71,12 @@ export function KanbanColumn({
         setTitle(card.title);
         setPriority(card.priority);
         setDescription(card.description ?? "");
-        setTags(card.tags);
+        setTags(normalizeTags(card.tags ?? []));
         setAssignees(card.assignees.map((assignee) => assignee.name).join(", "));
         setIsOpen(true);
     }
 
-    function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
         const parsedAssignees = assignees
             .split(",")
@@ -84,17 +92,16 @@ export function KanbanColumn({
         };
 
         if (editingCard) {
-            onEditCard(column.id, editingCard.id, input);
-            if (selectedColumnId !== column.id) {
-                onMoveCard(editingCard.id, column.id, selectedColumnId);
-            }
+            await onSaveCardEdit(column.id, editingCard.id, selectedColumnId, input);
         } else {
-            onAddCard(selectedColumnId, input);
+            await onAddCard(selectedColumnId, input);
         }
 
         setIsOpen(false);
         resetForm();
     }
+
+    const cards = column.cards ?? [];
 
     return (
         <>
@@ -102,7 +109,7 @@ export function KanbanColumn({
                 <CardHeader className="flex-row items-center justify-between space-y-0">
                     <div className="flex items-center gap-2">
                         <CardTitle className="text-sm">{column.title}</CardTitle>
-                        <span className="text-xs text-muted-foreground">{column.cards.length}</span>
+                        <span className="text-xs text-muted-foreground">{cards.length}</span>
                     </div>
                     <Button variant="ghost" size="sm" onClick={openAddModal}>
                         Add
@@ -110,7 +117,7 @@ export function KanbanColumn({
                 </CardHeader>
 
                 <CardContent className="space-y-3">
-                    {column.cards.map((card) => {
+                    {cards.map((card) => {
                         return (
                             <div key={card.id} className="space-y-2">
                                 <KanbanCard card={card} onClick={() => openEditModal(card)} />
@@ -128,7 +135,7 @@ export function KanbanColumn({
                         );
                     })}
 
-                    {column.cards.length === 0 ? (
+                    {cards.length === 0 ? (
                         <div className="rounded-lg border border-dashed bg-background/60 p-6 text-center text-sm text-muted-foreground">
                             No cards yet
                         </div>
@@ -198,8 +205,8 @@ export function KanbanColumn({
                             <div className="flex flex-col gap-2 text-sm">
                                 <span className="font-medium">Tags</span>
                                 <div className="flex flex-wrap gap-2">
-                                    {["Web", "Mobile", "Design"].map((tag) => {
-                                        const typedTag = tag as Tag;
+                                    {KNOWN_TAGS.map((tag) => {
+                                        const typedTag = tag;
                                         const checked = tags.includes(typedTag);
                                         return (
                                             <button
