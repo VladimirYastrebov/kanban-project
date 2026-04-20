@@ -116,7 +116,7 @@ export function KanbanColumn({
                     </Button>
                 </CardHeader>
 
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-3 overflow-y-auto max-h-[calc(100vh-200px)]">
                     {cards.map((card) => {
                         return (
                             <div key={card.id} className="space-y-2">
