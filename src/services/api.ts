@@ -33,5 +33,6 @@ export const removeCard = async (cardId: string): Promise<void> => {
     await api.delete(`/cards/${cardId}/`);
 };
 
+
 //! добавить DnD
 export default api;
