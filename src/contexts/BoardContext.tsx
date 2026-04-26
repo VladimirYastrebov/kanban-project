@@ -58,6 +58,12 @@ const replaceCardInColumns = (columns: Column[], cardId: string, saved: Card): C
     );
 };
 
+const withNormalizedColumnOrders = (columns: Column[]): Column[] =>
+    columns.map((column: Column) => ({
+        ...column,
+        cards: withSequentialOrder(sortCardsByOrder(column.cards ?? [])),
+    }));
+
 export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [columns, setColumns] = useState<Column[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -270,6 +276,8 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         newOrder?: number,
     ): Promise<void> => {
         let orderForApi = 0;
+        let movedCardSnapshot: Card | null = null;
+        let nextColumnsForApi: Column[] = [];
         let snapshot: Column[] | null = null;
 
         setColumns((current: Column[]) => {
@@ -304,6 +312,7 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 column: toColumnId,
                 order: orderForApi,
             };
+            movedCardSnapshot = updatedCard;
 
             const updatedTargetCards = withSequentialOrder([
                 ...targetCardsBase.slice(0, nextOrder),
@@ -311,7 +320,7 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 ...targetCardsBase.slice(nextOrder),
             ]);
 
-            return current.map((column: Column) => {
+            const nextColumns = current.map((column: Column) => {
                 if (column.id === fromColumnId) {
                     if (fromColumnId === toColumnId) {
                         return {
@@ -332,15 +341,37 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 }
                 return column;
             });
+            nextColumnsForApi = withNormalizedColumnOrders(nextColumns);
+            return nextColumnsForApi;
         });
 
         try {
-            const saved = await updateCard(cardId, {
+            if (!movedCardSnapshot) {
+                return;
+            }
+
+            await updateCard(cardId, {
                 column: toColumnId,
                 order: orderForApi,
             });
-            const merged: Card = { ...saved, column: saved.column ?? toColumnId };
-            setColumns((current: Column[]) => replaceCardInColumns(current, cardId, merged));
+
+            const columnsToPersist = [fromColumnId, toColumnId];
+            const updates = nextColumnsForApi
+                .filter((column) => columnsToPersist.includes(column.id))
+                .flatMap((column) =>
+                    (column.cards ?? []).map((card, index) =>
+                        updateCard(card.id, {
+                            column: column.id,
+                            order: index,
+                        }),
+                    ),
+                );
+
+            if (updates.length > 0) {
+                await Promise.all(updates);
+            }
+
+            setColumns((current: Column[]) => withNormalizedColumnOrders(current));
         } catch (error) {
             console.error("Failed to move card:", error);
             if (snapshot) {

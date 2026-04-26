@@ -334,6 +334,7 @@ export const transformColumnToFrontend = (
         transformedCards = backendColumn.cards.map((card: BackendCard) =>
             transformCardToFrontend(card),
         );
+        transformedCards.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     }
 
     return {
