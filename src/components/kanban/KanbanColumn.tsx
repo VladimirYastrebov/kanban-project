@@ -108,8 +108,6 @@ export function KanbanColumn({
 
     const cards = column.cards ?? [];
     const taskIds = cards.map((card) => card.id);
-    // console.log(cards);
-    // console.log(taskIds);
     return (
         <>
             <Card aria-label={`${column.title} column`} className="bg-muted/20">
