@@ -1,5 +1,7 @@
 import { useState } from "react";
-
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useDroppable } from "@dnd-kit/core";
+import { SortableTask } from "../dnd/SortableTask";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,6 +41,9 @@ export function KanbanColumn({
     onDeleteCard,
     onSaveCardEdit,
 }: KanbanColumnProps) {
+    const { setNodeRef } = useDroppable({
+        id: column.id,
+    });
     const [isOpen, setIsOpen] = useState(false);
     const [selectedColumnId, setSelectedColumnId] = useState(column.id);
     const [title, setTitle] = useState("");
@@ -102,7 +107,9 @@ export function KanbanColumn({
     }
 
     const cards = column.cards ?? [];
-
+    const taskIds = cards.map((card) => card.id);
+    // console.log(cards);
+    // console.log(taskIds);
     return (
         <>
             <Card aria-label={`${column.title} column`} className="bg-muted/20">
@@ -116,38 +123,43 @@ export function KanbanColumn({
                     </Button>
                 </CardHeader>
 
-                <CardContent className="space-y-3 overflow-y-auto max-h-[calc(100vh-200px)]">
-                    {cards.map((card) => {
-                        return (
-                            <div key={card.id} className="space-y-2">
-                                <KanbanCard card={card} />
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => onDeleteCard(column.id, card.id)}
-                                    >
-                                        Delete
-                                    </Button>
-                                    <Button 
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => openEditModal(card)}
-                                    >
-                                        Edit
-                                    </Button>
-                                </div>
-                            </div>
-                        );
-                    })}
+                <CardContent
+                    ref={setNodeRef}
+                    className="space-y-3 overflow-y-auto max-h-[calc(100vh-200px)]"
+                >
+                    <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+                        {cards.map((card) => {
+                            return (
+                                <SortableTask key={card.id} id={card.id}>
+                                    <KanbanCard card={card} />
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => onDeleteCard(column.id, card.id)}
+                                        >
+                                            Delete
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => openEditModal(card)}
+                                        >
+                                            Edit
+                                        </Button>
+                                    </div>
+                                </SortableTask>
+                            );
+                        })}
 
-                    {cards.length === 0 ? (
-                        <div className="rounded-lg border border-dashed bg-background/60 p-6 text-center text-sm text-muted-foreground">
-                            No cards yet
-                        </div>
-                    ) : null}
+                        {cards.length === 0 ? (
+                            <div className="rounded-lg border border-dashed bg-background/60 p-6 text-center text-sm text-muted-foreground">
+                                No cards yet
+                            </div>
+                        ) : null}
+                    </SortableContext>
                 </CardContent>
             </Card>
 

@@ -31,6 +31,12 @@ const getNextCardOrder = (column: Column | undefined): number => {
 const sortCardsByOrder = (cards: Card[]): Card[] =>
     [...cards].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
+const withSequentialOrder = (cards: Card[]): Card[] =>
+    cards.map((card, index) => ({
+        ...card,
+        order: index,
+    }));
+
 const replaceCardInColumns = (columns: Column[], cardId: string, saved: Card): Column[] => {
     const without = columns.map((col) => ({
         ...col,
@@ -257,8 +263,6 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         toColumnId: string,
         newOrder?: number,
     ): Promise<void> => {
-        if (fromColumnId === toColumnId) return;
-
         let orderForApi = 0;
         let snapshot: Column[] | null = null;
 
@@ -275,7 +279,16 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             }
 
             const targetColumn = current.find((c: Column) => c.id === toColumnId);
-            orderForApi = newOrder ?? targetColumn?.cards?.length ?? 0;
+            const sourceCardsWithoutActive = (sourceColumn?.cards ?? []).filter(
+                (card: Card) => card.id !== cardId,
+            );
+
+            const targetCardsBase =
+                fromColumnId === toColumnId
+                    ? sourceCardsWithoutActive
+                    : [...(targetColumn?.cards ?? [])];
+            const nextOrder = Math.max(0, Math.min(newOrder ?? targetCardsBase.length, targetCardsBase.length));
+            orderForApi = nextOrder;
 
             const updatedCard: Card = {
                 ...cardToMove,
@@ -283,8 +296,20 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 order: orderForApi,
             };
 
+            const updatedTargetCards = withSequentialOrder([
+                ...targetCardsBase.slice(0, nextOrder),
+                updatedCard,
+                ...targetCardsBase.slice(nextOrder),
+            ]);
+
             return current.map((column: Column) => {
                 if (column.id === fromColumnId) {
+                    if (fromColumnId === toColumnId) {
+                        return {
+                            ...column,
+                            cards: updatedTargetCards,
+                        };
+                    }
                     return {
                         ...column,
                         cards: (column.cards ?? []).filter((card: Card) => card.id !== cardId),
@@ -293,7 +318,7 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 if (column.id === toColumnId) {
                     return {
                         ...column,
-                        cards: [...(column.cards ?? []), updatedCard],
+                        cards: updatedTargetCards,
                     };
                 }
                 return column;
