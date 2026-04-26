@@ -86,7 +86,7 @@ export function KanbanCard({ card }: { card: Card }) {
                     {card.assignees.map((a, idx) => (
                         <span
                             key={a.id}
-                            className={`grid size-8 place-items-center rounded-full border bg-muted text-[11px] font-semibold ${avatarClass(a.tone)}`}
+                                className={`grid size-8 place-items-center rounded-full border text-[11px] font-semibold ${avatarClass(a.tone) ?? "bg-muted text-foreground"}`}
                             style={{ marginLeft: idx === 0 ? 0 : -6 }}
                             title={a.name}
                         >
