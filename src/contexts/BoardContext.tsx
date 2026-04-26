@@ -19,7 +19,12 @@ export interface BoardContextType {
         targetColumnId: string,
         input: NewCardInput,
     ) => Promise<void>;
-    moveCard: (cardId: string, fromColumnId: string, toColumnId: string, newOrder?: number) => Promise<void>;
+    moveCard: (
+        cardId: string,
+        fromColumnId: string,
+        toColumnId: string,
+        newOrder?: number,
+    ) => Promise<void>;
 }
 
 const BoardContext = createContext<BoardContextType | undefined>(undefined);
@@ -80,7 +85,8 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             setColumns(data);
             setError(null);
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : "Failed to refresh board data";
+            const errorMessage =
+                err instanceof Error ? err.message : "Failed to refresh board data";
             setError(errorMessage);
             console.error("Error refreshing board data:", err);
         } finally {
@@ -287,7 +293,10 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 fromColumnId === toColumnId
                     ? sourceCardsWithoutActive
                     : [...(targetColumn?.cards ?? [])];
-            const nextOrder = Math.max(0, Math.min(newOrder ?? targetCardsBase.length, targetCardsBase.length));
+            const nextOrder = Math.max(
+                0,
+                Math.min(newOrder ?? targetCardsBase.length, targetCardsBase.length),
+            );
             orderForApi = nextOrder;
 
             const updatedCard: Card = {

@@ -78,7 +78,8 @@ function App() {
             destinationIndex = destinationColumn?.cards?.length ?? 0;
         } else {
             const destinationColumn = columns.find((column) => column.id === overColumnId);
-            destinationIndex = destinationColumn?.cards?.findIndex((card) => card.id === overId) ?? 0;
+            destinationIndex =
+                destinationColumn?.cards?.findIndex((card) => card.id === overId) ?? 0;
             if (destinationIndex < 0) {
                 destinationIndex = destinationColumn?.cards?.length ?? 0;
             }

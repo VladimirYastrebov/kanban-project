@@ -52,49 +52,49 @@ function avatarClass(tone: Card["assignees"][number]["tone"]) {
 
 export function KanbanCard({ card }: { card: Card }) {
     return (
-            <UiCard size="sm">
-                <CardHeader className="gap-2">
-                    <div className="flex items-center justify-between gap-3">
-                        <Badge
-                            variant="outline"
-                            className={`capitalize ${priorityClass(card.priority)}`}
-                        >
-                            {card.priority}
-                        </Badge>
+        <UiCard size="sm">
+            <CardHeader className="gap-2">
+                <div className="flex items-center justify-between gap-3">
+                    <Badge
+                        variant="outline"
+                        className={`capitalize ${priorityClass(card.priority)}`}
+                    >
+                        {card.priority}
+                    </Badge>
 
-                        <div className="flex flex-wrap items-center justify-end gap-2">
-                            {card.tags.map((tag) => (
-                                <Badge key={tag} className={tagClass(tag)}>
-                                    {tag}
-                                </Badge>
-                            ))}
-                        </div>
-                    </div>
-
-                    <CardTitle className="text-sm">{card.title}</CardTitle>
-                </CardHeader>
-
-                {card.description ? (
-                    <CardContent className="pt-0 text-sm text-muted-foreground">
-                        {card.description}
-                    </CardContent>
-                ) : null}
-
-                <CardFooter className="flex items-center justify-between">
-                    <time className="text-xs text-muted-foreground">{card.date}</time>
-                    <div className="flex items-center justify-end" aria-label="Assignees">
-                        {card.assignees.map((a, idx) => (
-                            <span
-                                key={a.id}
-                                className={`grid size-8 place-items-center rounded-full border bg-muted text-[11px] font-semibold ${avatarClass(a.tone)}`}
-                                style={{ marginLeft: idx === 0 ? 0 : -6 }}
-                                title={a.name}
-                            >
-                                {initials(a.name)}
-                            </span>
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                        {card.tags.map((tag) => (
+                            <Badge key={tag} className={tagClass(tag)}>
+                                {tag}
+                            </Badge>
                         ))}
                     </div>
-                </CardFooter>
-            </UiCard>
+                </div>
+
+                <CardTitle className="text-sm">{card.title}</CardTitle>
+            </CardHeader>
+
+            {card.description ? (
+                <CardContent className="pt-0 text-sm text-muted-foreground">
+                    {card.description}
+                </CardContent>
+            ) : null}
+
+            <CardFooter className="flex items-center justify-between">
+                <time className="text-xs text-muted-foreground">{card.date}</time>
+                <div className="flex items-center justify-end" aria-label="Assignees">
+                    {card.assignees.map((a, idx) => (
+                        <span
+                            key={a.id}
+                            className={`grid size-8 place-items-center rounded-full border bg-muted text-[11px] font-semibold ${avatarClass(a.tone)}`}
+                            style={{ marginLeft: idx === 0 ? 0 : -6 }}
+                            title={a.name}
+                        >
+                            {initials(a.name)}
+                        </span>
+                    ))}
+                </div>
+            </CardFooter>
+        </UiCard>
     );
 }
