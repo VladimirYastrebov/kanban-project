@@ -50,9 +50,8 @@ function avatarClass(tone: Card["assignees"][number]["tone"]) {
     }
 }
 
-export function KanbanCard({ card, onClick }: { card: Card; onClick?: () => void }) {
+export function KanbanCard({ card }: { card: Card }) {
     return (
-        <button type="button" onClick={onClick} className="w-full text-left">
             <UiCard size="sm">
                 <CardHeader className="gap-2">
                     <div className="flex items-center justify-between gap-3">
@@ -97,6 +96,5 @@ export function KanbanCard({ card, onClick }: { card: Card; onClick?: () => void
                     </div>
                 </CardFooter>
             </UiCard>
-        </button>
     );
 }

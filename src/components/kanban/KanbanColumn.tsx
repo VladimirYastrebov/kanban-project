@@ -120,7 +120,7 @@ export function KanbanColumn({
                     {cards.map((card) => {
                         return (
                             <div key={card.id} className="space-y-2">
-                                <KanbanCard card={card} onClick={() => openEditModal(card)} />
+                                <KanbanCard card={card} />
                                 <div className="flex flex-wrap items-center gap-2">
                                     <Button
                                         type="button"
@@ -129,6 +129,14 @@ export function KanbanColumn({
                                         onClick={() => onDeleteCard(column.id, card.id)}
                                     >
                                         Delete
+                                    </Button>
+                                    <Button 
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => openEditModal(card)}
+                                    >
+                                        Edit
                                     </Button>
                                 </div>
                             </div>
