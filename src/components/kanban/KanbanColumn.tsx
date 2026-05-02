@@ -123,7 +123,7 @@ export function KanbanColumn({
 
                 <CardContent
                     ref={setNodeRef}
-                    className="space-y-3 overflow-y-auto max-h-[calc(100vh-200px)]"
+                    className="space-y-3 overflow-y-auto scrollbar-hide [&::-webkit-scrollbar]:hidden max-h-[calc(100vh-200px)]"
                 >
                     <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
                         {cards.map((card) => {
