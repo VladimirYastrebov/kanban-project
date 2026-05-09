@@ -16,6 +16,9 @@ export const getColumns = async (): Promise<Column[]> => {
     return transformator.transformColumnsToFrontend(response.data);
 };
 
+//! реализовать метод "createColumn"
+// useoptimistickUpdate() или через context
+
 export const createCard = async (columnId: string, cardData: PartialCard): Promise<Card> => {
     const backendCardData = transformator.transformCardToBackend(cardData, columnId);
     const response = await api.post(`/columns/${backendCardData.column}/cards/`, backendCardData);
