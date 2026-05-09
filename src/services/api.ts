@@ -16,8 +16,21 @@ export const getColumns = async (): Promise<Column[]> => {
     return transformator.transformColumnsToFrontend(response.data);
 };
 
-//! реализовать метод "createColumn"
-// useoptimistickUpdate() или через context
+export const createColumn = async (columnData: Partial<Column>): Promise<Column> => {
+    const backendColumnData = transformator.transformColumnToBackend(columnData);
+    const response = await api.post("/columns/", backendColumnData);
+    return transformator.transformColumnToFrontend(response.data);
+};
+
+export const updateColumn = async (columnId: string, updates: Partial<Column>): Promise<Column> => {
+    const backendUpdates = transformator.transformColumnToBackend(updates);
+    const response = await api.put(`/columns/${columnId}/`, backendUpdates);
+    return transformator.transformColumnToFrontend(response.data);
+};
+
+export const deleteColumn = async (columnId: string): Promise<void> => {
+    await api.delete(`/columns/${columnId}/`);
+};
 
 export const createCard = async (columnId: string, cardData: PartialCard): Promise<Card> => {
     const backendCardData = transformator.transformCardToBackend(cardData, columnId);

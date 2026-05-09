@@ -1,7 +1,7 @@
 export type Priority = "low" | "medium" | "high";
 export type Tag = "Web" | "Mobile" | "Design";
 export type Tone = "slate" | "emerald" | "violet" | "amber" | "rose";
-export type ColumnTitle = "Todo" | "In Progress" | "Completed";
+export type ColumnTitle = string;
 
 export interface Assignee {
     id: string;

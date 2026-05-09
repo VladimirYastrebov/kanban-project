@@ -1,6 +1,7 @@
 import { useBoard } from "./contexts/useBoard.ts";
 import { KanbanColumn } from "@/components/kanban/KanbanColumn.tsx";
 import { KanbanCard } from "@/components/kanban/KanbanCard.tsx";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import {
     DndContext,
@@ -16,9 +17,11 @@ import {
 import type { Card } from "./types/kanban.ts";
 
 function App() {
-    const { columns, loading, error, addCard, deleteCard, saveCardEdit, moveCard } = useBoard();
+    const { columns, loading, error, addCard, deleteCard, saveCardEdit, moveCard, addColumn, updateColumn, deleteColumn } = useBoard();
     const columnIds = columns.map((column) => column.id);
     const [activeCard, setActiveCard] = useState<Card | null>(null);
+    const [newColumnTitle, setNewColumnTitle] = useState("");
+    const [showAddColumn, setShowAddColumn] = useState(false);
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
@@ -90,6 +93,14 @@ function App() {
         await moveCard(activeId, activeColumnId, overColumnId, destinationIndex);
     };
 
+    const handleAddColumn = async () => {
+        if (newColumnTitle.trim()) {
+            await addColumn(newColumnTitle.trim());
+            setNewColumnTitle("");
+            setShowAddColumn(false);
+        }
+    };
+
     if (loading) {
         return (
             <main className="min-h-dvh bg-background">
@@ -123,6 +134,34 @@ function App() {
                             {columns.reduce((acc, col) => acc + (col.cards?.length || 0), 0)} cards
                         </p>
                     </div>
+                    <div className="flex items-center gap-2">
+                        {showAddColumn ? (
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="Column title"
+                                    value={newColumnTitle}
+                                    onChange={(e) => setNewColumnTitle(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleAddColumn();
+                                        if (e.key === 'Escape') setShowAddColumn(false);
+                                    }}
+                                    className="px-3 py-1 border rounded text-sm"
+                                    autoFocus
+                                />
+                                <Button size="sm" onClick={handleAddColumn}>
+                                    Add
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => setShowAddColumn(false)}>
+                                    Cancel
+                                </Button>
+                            </div>
+                        ) : (
+                            <Button onClick={() => setShowAddColumn(true)}>
+                                Add Column
+                            </Button>
+                        )}
+                    </div>
                 </header>
 
                 <DndContext
@@ -131,7 +170,7 @@ function App() {
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
                 >
-                    <section className="grid gap-6 md:grid-cols-3" aria-label="Kanban board">
+                    <section className={`grid gap-6 ${columns.length <= 3 ? 'md:grid-cols-3' : 'md:grid-cols-4 lg:grid-cols-5'}`} aria-label="Kanban board">
                         {columns.map((column) => (
                             <KanbanColumn
                                 key={column.id}
@@ -140,6 +179,8 @@ function App() {
                                 onAddCard={addCard}
                                 onDeleteCard={deleteCard}
                                 onSaveCardEdit={saveCardEdit}
+                                onUpdateColumn={updateColumn}
+                                onDeleteColumn={deleteColumn}
                             />
                         ))}
                     </section>

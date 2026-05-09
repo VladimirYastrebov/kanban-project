@@ -17,8 +17,8 @@ type DateFormatOptions = {
     year: "numeric" | "2-digit";
 };
 
-type TitleMapping = Record<string, string>;
-type ColumnIdMapping = Record<string, string>;
+// type TitleMapping = Record<string, string>;
+// type ColumnIdMapping = Record<string, string>;
 
 const TONES: readonly Tone[] = ["slate", "emerald", "violet", "amber", "rose"] as const;
 
@@ -28,29 +28,17 @@ const DATE_FORMAT_OPTIONS: DateFormatOptions = {
     year: "numeric",
 } as const;
 
-const TITLE_TO_BACKEND_MAPPING: TitleMapping = {
-    Todo: "toDo",
-    "In Progress": "inProgress",
-    Completed: "done",
-} as const;
+// const TITLE_TO_BACKEND_MAPPING: TitleMapping = {
+// } as const;
 
-const TITLE_TO_FRONTEND_MAPPING: TitleMapping = {
-    toDo: "Todo",
-    inProgress: "In Progress",
-    done: "Completed",
-} as const;
+// const TITLE_TO_FRONTEND_MAPPING: TitleMapping = {
+// } as const;
 
-const COLUMN_ID_TO_BACKEND_MAPPING: ColumnIdMapping = {
-    todo: "toDo",
-    in_progress: "inProgress",
-    completed: "done",
-} as const;
+// const COLUMN_ID_TO_BACKEND_MAPPING: ColumnIdMapping = {
+// } as const;
 
-const COLUMN_ID_TO_FRONTEND_MAPPING: ColumnIdMapping = {
-    toDo: "todo",
-    inProgress: "in_progress",
-    done: "completed",
-} as const;
+// const COLUMN_ID_TO_FRONTEND_MAPPING: ColumnIdMapping = {
+// } as const;
 
 const isValidDate = (date: Date): boolean => {
     return !isNaN(date.getTime());
@@ -185,26 +173,19 @@ export const namesToAssignees = (names: string[]): Assignee[] => {
 };
 
 export const mapTitleToBackend = (frontendTitle: ColumnTitle | string): string => {
-    const mapped = TITLE_TO_BACKEND_MAPPING[frontendTitle];
-    if (mapped) return mapped;
-
-    return frontendTitle.toLowerCase().replace(/\s/g, "");
+    return frontendTitle;
 };
 
 export const mapTitleToFrontend = (backendTitle: string): ColumnTitle => {
-    const mapped = TITLE_TO_FRONTEND_MAPPING[backendTitle];
-    if (mapped) return mapped as ColumnTitle;
-
     return backendTitle as ColumnTitle;
 };
 
 export const mapColumnIdToBackend = (frontendId: string): string => {
-    return COLUMN_ID_TO_BACKEND_MAPPING[frontendId] || frontendId;
+    return frontendId;
 };
 
 export const mapColumnIdToFrontend = (backendId: string): string => {
-    const mapped = COLUMN_ID_TO_FRONTEND_MAPPING[backendId];
-    return mapped ?? backendId;
+    return backendId;
 };
 
 export const transformCardToBackend = (
@@ -305,7 +286,7 @@ export const transformCardUpdatesToBackend = (
 
 export const transformColumnToBackend = (frontendColumn: Partial<FrontendColumn>) => {
     const columnId = frontendColumn.id ?? crypto.randomUUID();
-    const columnTitle = frontendColumn.title ?? "Todo";
+    const columnTitle = frontendColumn.title ?? "New Column";
 
     return {
         id: mapColumnIdToBackend(columnId),
@@ -322,7 +303,7 @@ export const transformColumnToFrontend = (
         console.warn("No backend column provided to transformer");
         return {
             id: "",
-            title: "Todo",
+            title: "New Column",
             order: 0,
             cards: [],
         };

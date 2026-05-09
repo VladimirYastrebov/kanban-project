@@ -32,6 +32,8 @@ type KanbanColumnProps = {
         targetColumnId: string,
         input: NewCardInput,
     ) => void | Promise<void>;
+    onUpdateColumn?: (columnId: string, title: string) => void | Promise<void>;
+    onDeleteColumn?: (columnId: string) => void | Promise<void>;
 };
 
 export function KanbanColumn({
@@ -40,6 +42,8 @@ export function KanbanColumn({
     onAddCard,
     onDeleteCard,
     onSaveCardEdit,
+    onUpdateColumn,
+    onDeleteColumn,
 }: KanbanColumnProps) {
     const { setNodeRef } = useDroppable({
         id: column.id,
@@ -52,6 +56,8 @@ export function KanbanColumn({
     const [tags, setTags] = useState<Tag[]>([]);
     const [assignees, setAssignees] = useState("");
     const [editingCard, setEditingCard] = useState<CardType | null>(null);
+    const [editingColumnTitle, setEditingColumnTitle] = useState(false);
+    const [columnTitle, setColumnTitle] = useState(column.title);
 
     //! TODO: Вынести в контекст States
 
@@ -106,19 +112,72 @@ export function KanbanColumn({
         resetForm();
     }
 
+    const handleColumnTitleEdit = () => {
+        setEditingColumnTitle(true);
+        setColumnTitle(column.title);
+    };
+
+    const handleColumnTitleSave = async () => {
+        if (columnTitle.trim() && columnTitle !== column.title && onUpdateColumn) {
+            await onUpdateColumn(column.id, columnTitle.trim());
+        }
+        setEditingColumnTitle(false);
+    };
+
+    const handleColumnTitleCancel = () => {
+        setColumnTitle(column.title);
+        setEditingColumnTitle(false);
+    };
+
+    const handleColumnDelete = async () => {
+        if (onDeleteColumn && window.confirm(`Delete column "${column.title}"? This will also delete all cards in this column.`)) {
+            await onDeleteColumn(column.id);
+        }
+    };
+
     const cards = column.cards ?? [];
     const taskIds = cards.map((card) => card.id);
     return (
         <>
             <Card aria-label={`${column.title} column`} className="bg-muted/20">
                 <CardHeader className="flex-row items-center justify-between space-y-0">
-                    <div className="flex items-center gap-2">
-                        <CardTitle className="text-sm">{column.title}</CardTitle>
-                        <span className="text-xs text-muted-foreground">{cards.length}</span>
+                    <div className="flex items-center gap-2 flex-1">
+                        {editingColumnTitle ? (
+                            <div className="flex items-center gap-2 flex-1">
+                                <Input
+                                    value={columnTitle}
+                                    onChange={(e) => setColumnTitle(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleColumnTitleSave();
+                                        if (e.key === 'Escape') handleColumnTitleCancel();
+                                    }}
+                                    className="text-sm h-8"
+                                    autoFocus
+                                />
+                                <Button variant="ghost" size="sm" onClick={handleColumnTitleSave}>
+                                    ✓
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={handleColumnTitleCancel}>
+                                    ✕
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 cursor-pointer" onClick={handleColumnTitleEdit}>
+                                <CardTitle className="text-sm">{column.title}</CardTitle>
+                                <span className="text-xs text-muted-foreground">{cards.length}</span>
+                            </div>
+                        )}
                     </div>
-                    <Button variant="ghost" size="sm" onClick={openAddModal}>
-                        Add
-                    </Button>
+                    <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" onClick={openAddModal}>
+                            Add
+                        </Button>
+                        {onDeleteColumn && (
+                            <Button variant="ghost" size="sm" onClick={handleColumnDelete}>
+                                🗑️
+                            </Button>
+                        )}
+                    </div>
                 </CardHeader>
 
                 <CardContent

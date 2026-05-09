@@ -3,7 +3,7 @@ import type { Column } from "../types/kanban.ts";
 export const BOARD: Column[] = [
     {
         id: "todo",
-        title: "Todo",
+        title: "To Do",
         cards: [],
     },
     {
@@ -13,7 +13,7 @@ export const BOARD: Column[] = [
     },
     {
         id: "completed",
-        title: "Completed",
+        title: "Done",
         cards: [],
     },
 ];

@@ -4,7 +4,7 @@ import { loadBoardData, refreshBoardData } from "@/services/dataLoader";
 import type { Column, Card, NewCardInput } from "@/types/kanban";
 import { getTodayFormatted } from "@/utils/dateHelpers";
 import { namesToAssignees } from "@/utils/transformers";
-import { createCard, removeCard, updateCard } from "@/services/api";
+import { createCard, removeCard, updateCard, createColumn, updateColumn as apiUpdateColumn, deleteColumn as apiDeleteColumn } from "@/services/api";
 
 export interface BoardContextType {
     columns: Column[];
@@ -25,6 +25,10 @@ export interface BoardContextType {
         toColumnId: string,
         newOrder?: number,
     ) => Promise<void>;
+    addColumn: (title: string) => Promise<void>;
+    updateColumn: (columnId: string, title: string) => Promise<void>;
+    deleteColumn: (columnId: string) => Promise<void>;
+    reorderColumns: (columnIds: string[]) => Promise<void>;
 }
 
 const BoardContext = createContext<BoardContextType | undefined>(undefined);
@@ -380,6 +384,88 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
 
+    const addColumn = async (title: string): Promise<void> => {
+        const newColumn: Column = {
+            id: `col-${crypto.randomUUID()}`,
+            title,
+            order: columns.length,
+            cards: [],
+        };
+
+        setColumns((current: Column[]) => [...current, newColumn]);
+
+        try {
+            const savedColumn = await createColumn(newColumn);
+            setColumns((current: Column[]) =>
+                current.map((col) => (col.id === newColumn.id ? savedColumn : col))
+            );
+        } catch (error) {
+            console.error("Failed to create column:", error);
+            setColumns((current: Column[]) =>
+                current.filter((col) => col.id !== newColumn.id)
+            );
+        }
+    };
+
+    const updateColumn = async (columnId: string, title: string): Promise<void> => {
+        const oldColumn = columns.find((col) => col.id === columnId);
+        if (!oldColumn) return;
+
+        setColumns((current: Column[]) =>
+            current.map((col) =>
+                col.id === columnId ? { ...col, title } : col
+            )
+        );
+
+        try {
+            await apiUpdateColumn(columnId, { title });
+        } catch (error) {
+            console.error("Failed to update column:", error);
+            setColumns((current: Column[]) =>
+                current.map((col) =>
+                    col.id === columnId ? oldColumn : col
+                )
+            );
+        }
+    };
+
+    const deleteColumn = async (columnId: string): Promise<void> => {
+        const columnToDelete = columns.find((col) => col.id === columnId);
+        if (!columnToDelete) return;
+
+        setColumns((current: Column[]) =>
+            current.filter((col) => col.id !== columnId)
+        );
+
+        try {
+            await apiDeleteColumn(columnId);
+        } catch (error) {
+            console.error("Failed to delete column:", error);
+            setColumns((current: Column[]) =>
+                [...columns].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+            );
+        }
+    };
+
+    const reorderColumns = async (columnIds: string[]): Promise<void> => {
+        const reorderedColumns = columnIds.map((id, index) => {
+            const column = columns.find((col) => col.id === id);
+            return column ? { ...column, order: index } : null;
+        }).filter(Boolean) as Column[];
+
+        setColumns(reorderedColumns);
+
+        try {
+            const updates = reorderedColumns.map((column) =>
+                apiUpdateColumn(column.id, { order: column.order })
+            );
+            await Promise.all(updates);
+        } catch (error) {
+            console.error("Failed to reorder columns:", error);
+            setColumns(columns);
+        }
+    };
+
     useEffect(() => {
         loadData();
     }, []);
@@ -395,6 +481,10 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 deleteCard,
                 saveCardEdit,
                 moveCard,
+                addColumn,
+                updateColumn,
+                deleteColumn,
+                reorderColumns,
             }}
         >
             {children}
