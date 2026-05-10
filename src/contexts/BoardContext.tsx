@@ -4,7 +4,14 @@ import { loadBoardData, refreshBoardData } from "@/services/dataLoader";
 import type { Column, Card, NewCardInput } from "@/types/kanban";
 import { getTodayFormatted } from "@/utils/dateHelpers";
 import { namesToAssignees } from "@/utils/transformers";
-import { createCard, removeCard, updateCard, createColumn, updateColumn as apiUpdateColumn, deleteColumn as apiDeleteColumn } from "@/services/api";
+import {
+    createCard,
+    removeCard,
+    updateCard,
+    createColumn,
+    updateColumn as apiUpdateColumn,
+    deleteColumn as apiDeleteColumn,
+} from "@/services/api";
 
 export interface BoardContextType {
     columns: Column[];
@@ -68,6 +75,23 @@ const withNormalizedColumnOrders = (columns: Column[]): Column[] =>
         cards: withSequentialOrder(sortCardsByOrder(column.cards ?? [])),
     }));
 
+const normalizeColumns = (columns: Column[]): Column[] =>
+    columns
+        .slice()
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        .map((column, index) => ({
+            ...column,
+            order: index,
+            cards: withSequentialOrder(sortCardsByOrder(column.cards ?? [])),
+        }));
+
+const getNextColumnOrder = (columns: Column[]): number => {
+    if (!columns || columns.length === 0) {
+        return 0;
+    }
+    return Math.max(...columns.map((col) => col.order ?? 0), -1) + 1;
+};
+
 export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [columns, setColumns] = useState<Column[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -77,7 +101,7 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
             setLoading(true);
             const data = await loadBoardData();
-            setColumns(data);
+            setColumns(normalizeColumns(data));
             setError(null);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Failed to load board data";
@@ -92,7 +116,7 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
             setLoading(true);
             const data = await refreshBoardData();
-            setColumns(data);
+            setColumns(normalizeColumns(data));
             setError(null);
         } catch (err) {
             const errorMessage =
@@ -385,25 +409,24 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
 
     const addColumn = async (title: string): Promise<void> => {
+        const nextOrder = getNextColumnOrder(columns);
         const newColumn: Column = {
             id: `col-${crypto.randomUUID()}`,
             title,
-            order: columns.length,
+            order: nextOrder,
             cards: [],
         };
 
-        setColumns((current: Column[]) => [...current, newColumn]);
+        setColumns((current: Column[]) => normalizeColumns([...current, newColumn]));
 
         try {
             const savedColumn = await createColumn(newColumn);
             setColumns((current: Column[]) =>
-                current.map((col) => (col.id === newColumn.id ? savedColumn : col))
+                current.map((col) => (col.id === newColumn.id ? savedColumn : col)),
             );
         } catch (error) {
             console.error("Failed to create column:", error);
-            setColumns((current: Column[]) =>
-                current.filter((col) => col.id !== newColumn.id)
-            );
+            setColumns((current: Column[]) => current.filter((col) => col.id !== newColumn.id));
         }
     };
 
@@ -412,9 +435,7 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         if (!oldColumn) return;
 
         setColumns((current: Column[]) =>
-            current.map((col) =>
-                col.id === columnId ? { ...col, title } : col
-            )
+            current.map((col) => (col.id === columnId ? { ...col, title } : col)),
         );
 
         try {
@@ -422,47 +443,54 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } catch (error) {
             console.error("Failed to update column:", error);
             setColumns((current: Column[]) =>
-                current.map((col) =>
-                    col.id === columnId ? oldColumn : col
-                )
+                current.map((col) => (col.id === columnId ? oldColumn : col)),
             );
         }
     };
 
     const deleteColumn = async (columnId: string): Promise<void> => {
-        const columnToDelete = columns.find((col) => col.id === columnId);
-        if (!columnToDelete) return;
+        const snapshot = columns.map((col: Column) => ({
+            ...col,
+            cards: (col.cards ?? []).map((c: Card) => ({ ...c })),
+        }));
 
-        setColumns((current: Column[]) =>
-            current.filter((col) => col.id !== columnId)
-        );
+        setColumns(normalizeColumns(columns.filter((col) => col.id !== columnId)));
 
         try {
             await apiDeleteColumn(columnId);
+
+            const remainingColumns = normalizeColumns(snapshot.filter((col) => col.id !== columnId));
+            const orderUpdates = remainingColumns
+                .filter((column, index) => column.order !== index)
+                .map((column, index) => apiUpdateColumn(column.id, { order: index }));
+
+            if (orderUpdates.length > 0) {
+                await Promise.all(orderUpdates);
+            }
         } catch (error) {
             console.error("Failed to delete column:", error);
-            setColumns((current: Column[]) =>
-                [...columns].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-            );
+            setColumns(snapshot);
         }
     };
 
     const reorderColumns = async (columnIds: string[]): Promise<void> => {
-        const reorderedColumns = columnIds.map((id, index) => {
-            const column = columns.find((col) => col.id === id);
-            return column ? { ...column, order: index } : null;
-        }).filter(Boolean) as Column[];
+        const snapshot = columns;
+        const reorderedColumns = normalizeColumns(
+            columnIds
+                .map((id) => columns.find((col) => col.id === id))
+                .filter(Boolean) as Column[],
+        );
 
         setColumns(reorderedColumns);
 
         try {
             const updates = reorderedColumns.map((column) =>
-                apiUpdateColumn(column.id, { order: column.order })
+                apiUpdateColumn(column.id, { order: column.order }),
             );
             await Promise.all(updates);
         } catch (error) {
             console.error("Failed to reorder columns:", error);
-            setColumns(columns);
+            setColumns(snapshot);
         }
     };
 

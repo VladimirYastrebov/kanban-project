@@ -23,7 +23,7 @@ const normalizeTags = (tags: string[]): Tag[] =>
 
 type KanbanColumnProps = {
     column: Column;
-    columnIds: string[];
+    columnTitles: string[];
     onAddCard: (columnId: string, input: NewCardInput) => void | Promise<void>;
     onDeleteCard: (columnId: string, cardId: string) => void | Promise<void>;
     onSaveCardEdit: (
@@ -38,7 +38,7 @@ type KanbanColumnProps = {
 
 export function KanbanColumn({
     column,
-    columnIds,
+    columnTitles,
     onAddCard,
     onDeleteCard,
     onSaveCardEdit,
@@ -50,6 +50,7 @@ export function KanbanColumn({
     });
     const [isOpen, setIsOpen] = useState(false);
     const [selectedColumnId, setSelectedColumnId] = useState(column.id);
+    const [selectedColumnTitle, setSelectedCoulumnTitle] = useState(column.title);
     const [title, setTitle] = useState("");
     const [priority, setPriority] = useState<Priority>("low");
     const [description, setDescription] = useState("");
@@ -130,7 +131,12 @@ export function KanbanColumn({
     };
 
     const handleColumnDelete = async () => {
-        if (onDeleteColumn && window.confirm(`Delete column "${column.title}"? This will also delete all cards in this column.`)) {
+        if (
+            onDeleteColumn &&
+            window.confirm(
+                `Delete column "${column.title}"?`,
+            )
+        ) {
             await onDeleteColumn(column.id);
         }
     };
@@ -148,8 +154,8 @@ export function KanbanColumn({
                                     value={columnTitle}
                                     onChange={(e) => setColumnTitle(e.target.value)}
                                     onKeyDown={(e) => {
-                                        if (e.key === 'Enter') handleColumnTitleSave();
-                                        if (e.key === 'Escape') handleColumnTitleCancel();
+                                        if (e.key === "Enter") handleColumnTitleSave();
+                                        if (e.key === "Escape") handleColumnTitleCancel();
                                     }}
                                     className="text-sm h-8"
                                     autoFocus
@@ -162,9 +168,14 @@ export function KanbanColumn({
                                 </Button>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-2 cursor-pointer" onClick={handleColumnTitleEdit}>
+                            <div
+                                className="flex items-center gap-2 cursor-pointer"
+                                onClick={handleColumnTitleEdit}
+                            >
                                 <CardTitle className="text-sm">{column.title}</CardTitle>
-                                <span className="text-xs text-muted-foreground">{cards.length}</span>
+                                <span className="text-xs text-muted-foreground">
+                                    {cards.length}
+                                </span>
                             </div>
                         )}
                     </div>
@@ -174,7 +185,7 @@ export function KanbanColumn({
                         </Button>
                         {onDeleteColumn && (
                             <Button variant="ghost" size="sm" onClick={handleColumnDelete}>
-                                🗑️
+                                Delete Column
                             </Button>
                         )}
                     </div>
@@ -237,16 +248,16 @@ export function KanbanColumn({
                             />
 
                             <Select
-                                value={selectedColumnId}
-                                onValueChange={(value) => setSelectedColumnId(value)}
+                                value={selectedColumnTitle}
+                                onValueChange={(value) => setSelectedCoulumnTitle(value)}
                             >
                                 <SelectTrigger className="kanban-modal-input">
                                     <SelectValue placeholder="Select column" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {columnIds.map((columnId) => (
-                                        <SelectItem key={columnId} value={columnId}>
-                                            {columnId
+                                    {columnTitles.map((columnTitle) => (
+                                        <SelectItem key={columnTitle} value={columnTitle}>
+                                            {columnTitle
                                                 .split("_")
                                                 .map(
                                                     (word) => word[0].toUpperCase() + word.slice(1),

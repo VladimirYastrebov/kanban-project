@@ -17,8 +17,20 @@ import {
 import type { Card } from "./types/kanban.ts";
 
 function App() {
-    const { columns, loading, error, addCard, deleteCard, saveCardEdit, moveCard, addColumn, updateColumn, deleteColumn } = useBoard();
+    const {
+        columns,
+        loading,
+        error,
+        addCard,
+        deleteCard,
+        saveCardEdit,
+        moveCard,
+        addColumn,
+        updateColumn,
+        deleteColumn,
+    } = useBoard();
     const columnIds = columns.map((column) => column.id);
+    const columnTitles = columns.map((column) => column.title);
     const [activeCard, setActiveCard] = useState<Card | null>(null);
     const [newColumnTitle, setNewColumnTitle] = useState("");
     const [showAddColumn, setShowAddColumn] = useState(false);
@@ -143,8 +155,8 @@ function App() {
                                     value={newColumnTitle}
                                     onChange={(e) => setNewColumnTitle(e.target.value)}
                                     onKeyDown={(e) => {
-                                        if (e.key === 'Enter') handleAddColumn();
-                                        if (e.key === 'Escape') setShowAddColumn(false);
+                                        if (e.key === "Enter") handleAddColumn();
+                                        if (e.key === "Escape") setShowAddColumn(false);
                                     }}
                                     className="px-3 py-1 border rounded text-sm"
                                     autoFocus
@@ -152,14 +164,16 @@ function App() {
                                 <Button size="sm" onClick={handleAddColumn}>
                                     Add
                                 </Button>
-                                <Button variant="ghost" size="sm" onClick={() => setShowAddColumn(false)}>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowAddColumn(false)}
+                                >
                                     Cancel
                                 </Button>
                             </div>
                         ) : (
-                            <Button onClick={() => setShowAddColumn(true)}>
-                                Add Column
-                            </Button>
+                            <Button onClick={() => setShowAddColumn(true)}>Add Column</Button>
                         )}
                     </div>
                 </header>
@@ -170,12 +184,15 @@ function App() {
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
                 >
-                    <section className={`grid gap-6 ${columns.length <= 3 ? 'md:grid-cols-3' : 'md:grid-cols-4 lg:grid-cols-5'}`} aria-label="Kanban board">
+                    <section
+                        className={`grid gap-6 ${columns.length <= 3 ? "md:grid-cols-3" : "md:grid-cols-4 lg:grid-cols-5"}`}
+                        aria-label="Kanban board"
+                    >
                         {columns.map((column) => (
                             <KanbanColumn
                                 key={column.id}
                                 column={column}
-                                columnIds={columnIds}
+                                columnTitles={columnTitles}
                                 onAddCard={addCard}
                                 onDeleteCard={deleteCard}
                                 onSaveCardEdit={saveCardEdit}

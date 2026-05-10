@@ -23,7 +23,13 @@ export const createColumn = async (columnData: Partial<Column>): Promise<Column>
 };
 
 export const updateColumn = async (columnId: string, updates: Partial<Column>): Promise<Column> => {
-    const backendUpdates = transformator.transformColumnToBackend(updates);
+    const backendUpdates: Record<string, unknown> = {};
+    if (updates.title !== undefined) {
+        backendUpdates.title = updates.title;
+    }
+    if (updates.order !== undefined) {
+        backendUpdates.order = updates.order;
+    }
     const response = await api.put(`/columns/${columnId}/`, backendUpdates);
     return transformator.transformColumnToFrontend(response.data);
 };
