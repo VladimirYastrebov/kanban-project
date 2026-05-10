@@ -23,7 +23,7 @@ const normalizeTags = (tags: string[]): Tag[] =>
 
 type KanbanColumnProps = {
     column: Column;
-    columnTitles: string[];
+    columns: Column[];
     onAddCard: (columnId: string, input: NewCardInput) => void | Promise<void>;
     onDeleteCard: (columnId: string, cardId: string) => void | Promise<void>;
     onSaveCardEdit: (
@@ -38,7 +38,7 @@ type KanbanColumnProps = {
 
 export function KanbanColumn({
     column,
-    columnTitles,
+    columns,
     onAddCard,
     onDeleteCard,
     onSaveCardEdit,
@@ -50,7 +50,6 @@ export function KanbanColumn({
     });
     const [isOpen, setIsOpen] = useState(false);
     const [selectedColumnId, setSelectedColumnId] = useState(column.id);
-    const [selectedColumnTitle, setSelectedCoulumnTitle] = useState(column.title);
     const [title, setTitle] = useState("");
     const [priority, setPriority] = useState<Priority>("low");
     const [description, setDescription] = useState("");
@@ -131,12 +130,7 @@ export function KanbanColumn({
     };
 
     const handleColumnDelete = async () => {
-        if (
-            onDeleteColumn &&
-            window.confirm(
-                `Delete column "${column.title}"?`,
-            )
-        ) {
+        if (onDeleteColumn && window.confirm(`Delete column "${column.title}"?`)) {
             await onDeleteColumn(column.id);
         }
     };
@@ -248,21 +242,16 @@ export function KanbanColumn({
                             />
 
                             <Select
-                                value={selectedColumnTitle}
-                                onValueChange={(value) => setSelectedCoulumnTitle(value)}
+                                value={selectedColumnId}
+                                onValueChange={(value) => setSelectedColumnId(value)}
                             >
                                 <SelectTrigger className="kanban-modal-input">
                                     <SelectValue placeholder="Select column" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {columnTitles.map((columnTitle) => (
-                                        <SelectItem key={columnTitle} value={columnTitle}>
-                                            {columnTitle
-                                                .split("_")
-                                                .map(
-                                                    (word) => word[0].toUpperCase() + word.slice(1),
-                                                )
-                                                .join(" ")}
+                                    {columns.map((targetColumn) => (
+                                        <SelectItem key={targetColumn.id} value={targetColumn.id}>
+                                            {targetColumn.title}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

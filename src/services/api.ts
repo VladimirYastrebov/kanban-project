@@ -1,6 +1,7 @@
 import axios from "axios";
 import type { Column, Card, PartialCard } from "../types/kanban";
-import * as transformator from "../utils/transformers.ts";
+import * as transformator from "../utils/transformers";
+import { normalizeAxiosError } from "@/lib/errors";
 
 const VITE_API_URL = import.meta.env.VITE_API_URL as string | undefined;
 
@@ -10,6 +11,13 @@ const api = axios.create({
         "Content-Type": "application/json",
     },
 });
+
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        throw normalizeAxiosError(error);
+    },
+);
 
 export const getColumns = async (): Promise<Column[]> => {
     const response = await api.get("/columns/");
@@ -41,7 +49,6 @@ export const deleteColumn = async (columnId: string): Promise<void> => {
 export const createCard = async (columnId: string, cardData: PartialCard): Promise<Card> => {
     const backendCardData = transformator.transformCardToBackend(cardData, columnId);
     const response = await api.post(`/columns/${backendCardData.column}/cards/`, backendCardData);
-
     return transformator.transformCardToFrontend(response.data);
 };
 

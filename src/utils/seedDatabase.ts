@@ -12,10 +12,10 @@ export const seedDatabase = async () => {
 
     for (const columnData of defaultColumns) {
         try {
-            const response = await fetch('/api/columns/', {
-                method: 'POST',
+            const response = await fetch("/api/columns/", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
+                    "Content-Type": "application/json",
                 },
                 body: JSON.stringify(columnData),
             });

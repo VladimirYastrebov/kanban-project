@@ -5,9 +5,9 @@ import App from "./App.tsx";
 import { BoardProvider } from "./contexts/BoardContext.tsx";
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <BoardProvider>
-      <App />
-    </BoardProvider>
-  </StrictMode>,
+    <StrictMode>
+        <BoardProvider>
+            <App />
+        </BoardProvider>
+    </StrictMode>,
 );

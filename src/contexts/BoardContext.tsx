@@ -459,7 +459,9 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
             await apiDeleteColumn(columnId);
 
-            const remainingColumns = normalizeColumns(snapshot.filter((col) => col.id !== columnId));
+            const remainingColumns = normalizeColumns(
+                snapshot.filter((col) => col.id !== columnId),
+            );
             const orderUpdates = remainingColumns
                 .filter((column, index) => column.order !== index)
                 .map((column, index) => apiUpdateColumn(column.id, { order: index }));
@@ -476,9 +478,7 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const reorderColumns = async (columnIds: string[]): Promise<void> => {
         const snapshot = columns;
         const reorderedColumns = normalizeColumns(
-            columnIds
-                .map((id) => columns.find((col) => col.id === id))
-                .filter(Boolean) as Column[],
+            columnIds.map((id) => columns.find((col) => col.id === id)).filter(Boolean) as Column[],
         );
 
         setColumns(reorderedColumns);
