@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     DndContext,
     closestCenter,
@@ -11,25 +12,31 @@ import {
     type DragStartEvent,
 } from "@dnd-kit/core";
 import { useBoard } from "@/contexts/useBoard";
+import { useError } from "@/contexts/ErrorContext";
+import { handleError } from "@/lib/errorRouting";
 import { KanbanColumn } from "@/components/kanban/KanbanColumn";
 import { KanbanCard } from "@/components/kanban/KanbanCard";
 import { Button } from "@/components/ui/button";
 import type { Card } from "@/types/kanban";
 
 export function BoardPage() {
+    const navigate = useNavigate();
+    const { notifyError } = useError();
     const {
         columns,
         loading,
         error,
-        addCard,
-        deleteCard,
-        saveCardEdit,
-        moveCard,
-        addColumn,
-        updateColumn,
-        deleteColumn,
+        addCard: contextAddCard,
+        deleteCard: contextDeleteCard,
+        saveCardEdit: contextSaveCardEdit,
+        moveCard: contextMoveCard,
+        addColumn: contextAddColumn,
+        updateColumn: contextUpdateColumn,
+        deleteColumn: contextDeleteColumn,
+        moveColumn: contextMoveColumn,
     } = useBoard();
-    const columnIds = columns.map((column) => column.id);
+    const sortedColumns = [...columns].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const columnIds = sortedColumns.map((column) => column.id);
     const [activeCard, setActiveCard] = useState<Card | null>(null);
     const [newColumnTitle, setNewColumnTitle] = useState("");
     const [showAddColumn, setShowAddColumn] = useState(false);
@@ -37,6 +44,81 @@ export function BoardPage() {
         useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
         useSensor(KeyboardSensor),
     );
+
+    // Error handling wrappers for all async operations
+    const addCard = async (columnId: string, input: Parameters<typeof contextAddCard>[1]) => {
+        try {
+            await contextAddCard(columnId, input);
+        } catch (err) {
+            handleError(err, { navigate, notify: notifyError });
+        }
+    };
+
+    const deleteCard = async (columnId: string, cardId: string) => {
+        try {
+            await contextDeleteCard(columnId, cardId);
+        } catch (err) {
+            handleError(err, { navigate, notify: notifyError });
+        }
+    };
+
+    const saveCardEdit = async (
+        fromColumnId: string,
+        cardId: string,
+        targetColumnId: string,
+        input: Parameters<typeof contextSaveCardEdit>[3],
+    ) => {
+        try {
+            await contextSaveCardEdit(fromColumnId, cardId, targetColumnId, input);
+        } catch (err) {
+            handleError(err, { navigate, notify: notifyError });
+        }
+    };
+
+    const moveCard = async (
+        cardId: string,
+        fromColumnId: string,
+        toColumnId: string,
+        newOrder?: number,
+    ) => {
+        try {
+            await contextMoveCard(cardId, fromColumnId, toColumnId, newOrder);
+        } catch (err) {
+            handleError(err, { navigate, notify: notifyError });
+        }
+    };
+
+    const addColumn = async (title: string) => {
+        try {
+            await contextAddColumn(title);
+        } catch (err) {
+            handleError(err, { navigate, notify: notifyError });
+        }
+    };
+
+    const updateColumn = async (columnId: string, title: string) => {
+        try {
+            await contextUpdateColumn(columnId, title);
+        } catch (err) {
+            handleError(err, { navigate, notify: notifyError });
+        }
+    };
+
+    const deleteColumn = async (columnId: string) => {
+        try {
+            await contextDeleteColumn(columnId);
+        } catch (err) {
+            handleError(err, { navigate, notify: notifyError });
+        }
+    };
+
+    const moveColumn = async (columnId: string, direction: -1 | 1) => {
+        try {
+            await contextMoveColumn(columnId, direction);
+        } catch (err) {
+            handleError(err, { navigate, notify: notifyError });
+        }
+    };
 
     const findCardColumn = (cardId: string) => {
         for (const column of columns) {
@@ -48,9 +130,10 @@ export function BoardPage() {
     };
 
     const handleDragStart = (event: DragStartEvent) => {
-        const cardId = String(event.active.id);
+        const id = String(event.active.id);
+
         for (const column of columns) {
-            const card = column.cards?.find((card) => card.id === cardId);
+            const card = column.cards?.find((card) => card.id === id);
             if (card) {
                 setActiveCard(card);
                 break;
@@ -60,11 +143,13 @@ export function BoardPage() {
 
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
+        const activeId = String(active.id);
+        const overId = String(over?.id ?? "");
+
+        // Handle card dragging
         setActiveCard(null);
         if (!over) return;
 
-        const activeId = String(active.id);
-        const overId = String(over.id);
         const activeColumnId = findCardColumn(activeId);
         if (!activeColumnId) return;
 
@@ -176,19 +261,23 @@ export function BoardPage() {
                     onDragEnd={handleDragEnd}
                 >
                     <section
-                        className={`grid gap-6 ${columns.length <= 3 ? "md:grid-cols-3" : "md:grid-cols-4 lg:grid-cols-5"}`}
+                        className={`grid gap-6 ${sortedColumns.length <= 3 ? "md:grid-cols-3" : "md:grid-cols-4 lg:grid-cols-5"}`}
                         aria-label="Kanban board"
                     >
-                        {columns.map((column) => (
+                        {sortedColumns.map((column, index) => (
                             <KanbanColumn
                                 key={column.id}
                                 column={column}
-                                columns={columns}
+                                columns={sortedColumns}
                                 onAddCard={addCard}
                                 onDeleteCard={deleteCard}
                                 onSaveCardEdit={saveCardEdit}
                                 onUpdateColumn={updateColumn}
                                 onDeleteColumn={deleteColumn}
+                                onMoveLeft={() => moveColumn(column.id, -1)}
+                                onMoveRight={() => moveColumn(column.id, 1)}
+                                isFirst={index === 0}
+                                isLast={index === sortedColumns.length - 1}
                             />
                         ))}
                     </section>

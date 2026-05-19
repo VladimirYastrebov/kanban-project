@@ -35,6 +35,7 @@ export interface BoardContextType {
     addColumn: (title: string) => Promise<void>;
     updateColumn: (columnId: string, title: string) => Promise<void>;
     deleteColumn: (columnId: string) => Promise<void>;
+    moveColumn: (columnId: string, direction: -1 | 1) => Promise<void>;
     reorderColumns: (columnIds: string[]) => Promise<void>;
 }
 
@@ -84,6 +85,12 @@ const normalizeColumns = (columns: Column[]): Column[] =>
             order: index,
             cards: withSequentialOrder(sortCardsByOrder(column.cards ?? [])),
         }));
+
+const assignColumnOrders = (columns: Column[]): Column[] =>
+    columns.map((column, index) => ({
+        ...column,
+        order: index,
+    }));
 
 const getNextColumnOrder = (columns: Column[]): number => {
     if (!columns || columns.length === 0) {
@@ -168,7 +175,7 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 ),
             );
         } catch (error) {
-            console.error("Failed to save card:", error);
+            // Revert optimistic update
             setColumns((current: Column[]) =>
                 current.map((column: Column) =>
                     column.id === columnId
@@ -179,6 +186,7 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                         : column,
                 ),
             );
+            throw error;
         }
     };
 
@@ -202,10 +210,10 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
             await removeCard(cardId);
         } catch (error) {
-            console.error("Failed to delete card:", error);
             if (snapshot) {
                 setColumns(snapshot);
             }
+            throw error;
         }
     };
 
@@ -290,10 +298,10 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const merged: Card = { ...saved, column: saved.column ?? targetColumnId };
             setColumns((current: Column[]) => replaceCardInColumns(current, cardId, merged));
         } catch (error) {
-            console.error("Failed to save card:", error);
             if (snapshot) {
                 setColumns(snapshot);
             }
+            throw error;
         }
     };
 
@@ -401,10 +409,10 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
             setColumns((current: Column[]) => withNormalizedColumnOrders(current));
         } catch (error) {
-            console.error("Failed to move card:", error);
             if (snapshot) {
                 setColumns(snapshot);
             }
+            throw error;
         }
     };
 
@@ -425,8 +433,8 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 current.map((col) => (col.id === newColumn.id ? savedColumn : col)),
             );
         } catch (error) {
-            console.error("Failed to create column:", error);
             setColumns((current: Column[]) => current.filter((col) => col.id !== newColumn.id));
+            throw error;
         }
     };
 
@@ -441,10 +449,10 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
             await apiUpdateColumn(columnId, { title });
         } catch (error) {
-            console.error("Failed to update column:", error);
             setColumns((current: Column[]) =>
                 current.map((col) => (col.id === columnId ? oldColumn : col)),
             );
+            throw error;
         }
     };
 
@@ -470,14 +478,44 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 await Promise.all(orderUpdates);
             }
         } catch (error) {
-            console.error("Failed to delete column:", error);
             setColumns(snapshot);
+            throw error;
+        }
+    };
+
+    const moveColumn = async (columnId: string, direction: -1 | 1): Promise<void> => {
+        const normalizedColumns = normalizeColumns(columns);
+        const currentIndex = normalizedColumns.findIndex((column) => column.id === columnId);
+        const targetIndex = currentIndex + direction;
+
+        if (currentIndex < 0 || targetIndex < 0 || targetIndex >= normalizedColumns.length) {
+            return;
+        }
+
+        const nextColumns = [...normalizedColumns];
+        [nextColumns[currentIndex], nextColumns[targetIndex]] = [
+            nextColumns[targetIndex],
+            nextColumns[currentIndex],
+        ];
+        const reorderedColumns = assignColumnOrders(nextColumns);
+        const snapshot = columns;
+
+        setColumns(reorderedColumns);
+
+        try {
+            const updates = reorderedColumns.map((column) =>
+                apiUpdateColumn(column.id, { order: column.order }),
+            );
+            await Promise.all(updates);
+        } catch (error) {
+            setColumns(snapshot);
+            throw error;
         }
     };
 
     const reorderColumns = async (columnIds: string[]): Promise<void> => {
         const snapshot = columns;
-        const reorderedColumns = normalizeColumns(
+        const reorderedColumns = assignColumnOrders(
             columnIds.map((id) => columns.find((col) => col.id === id)).filter(Boolean) as Column[],
         );
 
@@ -489,8 +527,8 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             );
             await Promise.all(updates);
         } catch (error) {
-            console.error("Failed to reorder columns:", error);
             setColumns(snapshot);
+            throw error;
         }
     };
 
@@ -512,6 +550,7 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 addColumn,
                 updateColumn,
                 deleteColumn,
+                moveColumn,
                 reorderColumns,
             }}
         >

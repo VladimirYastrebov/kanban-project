@@ -34,6 +34,10 @@ type KanbanColumnProps = {
     ) => void | Promise<void>;
     onUpdateColumn?: (columnId: string, title: string) => void | Promise<void>;
     onDeleteColumn?: (columnId: string) => void | Promise<void>;
+    onMoveLeft?: () => void;
+    onMoveRight?: () => void;
+    isFirst?: boolean;
+    isLast?: boolean;
 };
 
 export function KanbanColumn({
@@ -44,8 +48,12 @@ export function KanbanColumn({
     onSaveCardEdit,
     onUpdateColumn,
     onDeleteColumn,
+    onMoveLeft,
+    onMoveRight,
+    isFirst = false,
+    isLast = false,
 }: KanbanColumnProps) {
-    const { setNodeRef } = useDroppable({
+    const { setNodeRef: setDroppableRef } = useDroppable({
         id: column.id,
     });
     const [isOpen, setIsOpen] = useState(false);
@@ -139,9 +147,32 @@ export function KanbanColumn({
     const taskIds = cards.map((card) => card.id);
     return (
         <>
-            <Card aria-label={`${column.title} column`} className="bg-muted/20">
+            <Card
+                aria-label={`${column.title} column`}
+                className="bg-muted/20"
+            >
                 <CardHeader className="flex-row items-center justify-between space-y-0">
                     <div className="flex items-center gap-2 flex-1">
+                        <div className="flex items-center gap-1">
+                            <Button
+                                variant="ghost"
+                                size="icon-xs"
+                                aria-label="Move column left"
+                                onClick={onMoveLeft}
+                                disabled={isFirst}
+                            >
+                                ←
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon-xs"
+                                aria-label="Move column right"
+                                onClick={onMoveRight}
+                                disabled={isLast}
+                            >
+                                →
+                            </Button>
+                        </div>
                         {editingColumnTitle ? (
                             <div className="flex items-center gap-2 flex-1">
                                 <Input
@@ -186,7 +217,7 @@ export function KanbanColumn({
                 </CardHeader>
 
                 <CardContent
-                    ref={setNodeRef}
+                    ref={setDroppableRef}
                     className="space-y-3 overflow-y-auto scrollbar-hide [&::-webkit-scrollbar]:hidden max-h-[calc(100vh-200px)]"
                 >
                     <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>

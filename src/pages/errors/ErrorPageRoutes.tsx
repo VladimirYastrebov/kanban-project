@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ErrorPageLayout } from "@/components/errors/ErrorPageLayout";
 import { Button } from "@/components/ui/button";
+import { ErrorTestPage } from "./ErrorTestPage";
 
 const createPage = (
     icon: string,
@@ -46,7 +47,7 @@ export function ErrorPageRoutes() {
                     { label: "Try Again", href: "/" },
                 )}
             />
-            {/* <Route path="401" element={createPage("🔐", "Unauthorized", "You need to sign in to access this page.", { label: "Sign In", href: "/" })} /> */}
+            <Route path="401" element={createPage("🔐", "Unauthorized", "You need to sign in to access this page.", { label: "Sign In", href: "/" })} />
             <Route
                 path="403"
                 element={createPage(
@@ -110,7 +111,8 @@ export function ErrorPageRoutes() {
                     { label: "Retry", href: "/" },
                 )}
             />
-            {/* <Route path="session-expired" element={createPage("⏰", "Session Expired", "Your session has expired. Please sign in again.", { label: "Sign In", href: "/" })} /> */}
+            <Route path="test" element={<ErrorTestPage />} />
+            <Route path="session-expired" element={createPage("⏰", "Session Expired", "Your session has expired. Please sign in again.", { label: "Sign In", href: "/" })} />
             <Route path="*" element={<Navigate to="/errors/404" replace />} />
         </Routes>
     );

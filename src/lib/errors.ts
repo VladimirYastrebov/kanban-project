@@ -117,11 +117,16 @@ export class NotFoundAppError extends AppError {
 }
 
 export class ConflictAppError extends AppError {
-    constructor(options: AppErrorOptions) {
+    constructor(
+        options: Omit<
+            AppErrorOptions,
+            "severity" | "color" | "icon"
+        >
+    ) {
         super(
             Object.assign(
                 {
-                    severity: "warning",
+                    severity: "warning" as const,
                     color: "#F97316",
                     icon: "⚔️",
                     retryable: false,
@@ -129,6 +134,7 @@ export class ConflictAppError extends AppError {
                 options,
             ),
         );
+
         this.name = "ConflictAppError";
     }
 }
