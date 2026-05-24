@@ -1,8 +1,3 @@
-// import { Column } from "../types/kanban";
-
-// This file can be used to seed the database with initial data
-// Run this in the browser console or as a script to populate the database
-
 export const seedDatabase = async () => {
     const defaultColumns = [
         { title: "To Do", order: 0 },

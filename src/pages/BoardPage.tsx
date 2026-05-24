@@ -45,7 +45,6 @@ export function BoardPage() {
         useSensor(KeyboardSensor),
     );
 
-    // Error handling wrappers for all async operations
     const addCard = async (columnId: string, input: Parameters<typeof contextAddCard>[1]) => {
         try {
             await contextAddCard(columnId, input);
@@ -146,7 +145,6 @@ export function BoardPage() {
         const activeId = String(active.id);
         const overId = String(over?.id ?? "");
 
-        // Handle card dragging
         setActiveCard(null);
         if (!over) return;
 

@@ -17,9 +17,6 @@ type DateFormatOptions = {
     year: "numeric" | "2-digit";
 };
 
-// type TitleMapping = Record<string, string>;
-// type ColumnIdMapping = Record<string, string>;
-
 const TONES: readonly Tone[] = ["slate", "emerald", "violet", "amber", "rose"] as const;
 
 const DATE_FORMAT_OPTIONS: DateFormatOptions = {
@@ -27,18 +24,6 @@ const DATE_FORMAT_OPTIONS: DateFormatOptions = {
     day: "numeric",
     year: "numeric",
 } as const;
-
-// const TITLE_TO_BACKEND_MAPPING: TitleMapping = {
-// } as const;
-
-// const TITLE_TO_FRONTEND_MAPPING: TitleMapping = {
-// } as const;
-
-// const COLUMN_ID_TO_BACKEND_MAPPING: ColumnIdMapping = {
-// } as const;
-
-// const COLUMN_ID_TO_FRONTEND_MAPPING: ColumnIdMapping = {
-// } as const;
 
 const isValidDate = (date: Date): boolean => {
     return !isNaN(date.getTime());
@@ -345,7 +330,6 @@ export const transformColumnsToBackend = (
     return frontendColumns.map((column: FrontendColumn) => transformColumnToBackend(column));
 };
 
-//? Спросить у нейронки ещё раз про это:
 
 export const isBackendCard = (value: unknown): value is BackendCard => {
     return (

@@ -175,7 +175,6 @@ export const BoardProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 ),
             );
         } catch (error) {
-            // Revert optimistic update
             setColumns((current: Column[]) =>
                 current.map((column: Column) =>
                     column.id === columnId

@@ -67,7 +67,6 @@ export function KanbanColumn({
     const [editingColumnTitle, setEditingColumnTitle] = useState(false);
     const [columnTitle, setColumnTitle] = useState(column.title);
 
-    //! TODO: Вынести в контекст States
 
     function resetForm() {
         setSelectedColumnId(column.id);

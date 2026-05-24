@@ -22,10 +22,8 @@ export const handleError = (error: unknown, options: ErrorRoutingOptions): void 
     
     const { navigate, notify } = options;
 
-    // Always notify (shows toast/modal based on severity)
     notify(error);
 
-    // Route for critical/unrecoverable errors
     if (error instanceof OfflineAppError) {
         navigate("/errors/offline");
     } else if (error instanceof ServerAppError) {
